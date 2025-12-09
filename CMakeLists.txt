@@ -26,8 +26,8 @@ endif()
 find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Multimedia MultimediaWidgets Concurrent REQUIRED)
 
 # 源文件与头文件
-file(GLOB SOURCES src/*.cpp)
-file(GLOB HEADERS include/*.h)
+file(GLOB_RECURSE SOURCES src/*.cpp)
+file(GLOB_RECURSE HEADERS include/*.h)
 
 # 资源目录与文件列表
 set(IMAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resource")
