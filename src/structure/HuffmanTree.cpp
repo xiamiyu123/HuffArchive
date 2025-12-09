@@ -42,49 +42,58 @@ void HuffmanTree::build(const HashMap<unsigned char, int>& frequencyMap) {
         m_nodes[i].weight = 0;
     }
 
+    // 定义比较器：比较两个节点索引对应的权值
+    struct NodeComparator {
+        const ArrayList<HuffmanNode<unsigned char>>& nodes;
+        NodeComparator(const ArrayList<HuffmanNode<unsigned char>>& n) : nodes(n) {}
+        
+        // 返回 true 如果 a 的优先级高于 b（即 a 的权值小于 b）
+        bool operator()(int a, int b) const {
+            if (nodes[a].weight != nodes[b].weight) {
+                return nodes[a].weight < nodes[b].weight;
+            }
+            return a < b; // 权值相同时，索引小的优先，保证稳定性
+        }
+    };
+
+    // 创建优先队列
+    NodeComparator comp(m_nodes);
+    PriorityQueue<int, NodeComparator> pq(comp);
+
+    // 将所有叶子节点的索引加入优先队列
+    for (int j = 0; j < n; ++j) {
+        pq.push(j);
+    }
+
     // 2. 构建哈夫曼树
-    // 从 n 开始，依次创建 n-1 个新节点
-    for (i = n; i < m; ++i) {
-        int s1 = -1, s2 = -1;
-        // 在 0 到 i-1 范围内选择两个 parent 为 -1 且 weight 最小的节点
-        select(i, s1, s2);
+    // 循环直到队列中只剩下一个节点（根节点）
+    // 注意：我们需要生成 n-1 个新节点，新节点的索引从 n 开始
+    int nextNodeIndex = n;
+    while (pq.size() > 1) {
+        // 取出两个权值最小的节点
+        int s1 = pq.top();
+        pq.pop();
+        int s2 = pq.top();
+        pq.pop();
 
-        // 新节点 i 是 s1 和 s2 的父节点
-        m_nodes[s1].parent = i;
-        m_nodes[s2].parent = i;
+        // 新节点 nextNodeIndex 是 s1 和 s2 的父节点
+        m_nodes[s1].parent = nextNodeIndex;
+        m_nodes[s2].parent = nextNodeIndex;
 
-        m_nodes[i].lchild = s1;
-        m_nodes[i].rchild = s2;
-        m_nodes[i].weight = m_nodes[s1].weight + m_nodes[s2].weight;
+        m_nodes[nextNodeIndex].lchild = s1;
+        m_nodes[nextNodeIndex].rchild = s2;
+        m_nodes[nextNodeIndex].weight = m_nodes[s1].weight + m_nodes[s2].weight;
+
+        // 将新生成的父节点加入队列
+        pq.push(nextNodeIndex);
+        
+        nextNodeIndex++;
     }
 
     m_root = m - 1; // 最后一个生成的节点即为根节点
 }
 
-void HuffmanTree::select(int endIndex, int& s1, int& s2) {
-    int min1 = std::numeric_limits<int>::max();
-    int min2 = std::numeric_limits<int>::max();
-    s1 = -1;
-    s2 = -1;
-
-    for (int i = 0; i < endIndex; ++i) {
-        if (m_nodes[i].parent != -1) {
-            continue; // 已经有父节点了，跳过
-        }
-
-        if (m_nodes[i].weight < min1) {
-            // 更新最小值，原最小值变为次小值
-            min2 = min1;
-            s2 = s1;
-            min1 = m_nodes[i].weight;
-            s1 = i;
-        } else if (m_nodes[i].weight < min2) {
-            // 更新次小值
-            min2 = m_nodes[i].weight;
-            s2 = i;
-        }
-    }
-}
+// select 函数已移除，使用优先队列替代
 
 //Ciallo～ (∠・ω< )⌒★
 

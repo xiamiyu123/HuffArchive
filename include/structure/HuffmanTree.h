@@ -3,6 +3,7 @@
 #include "HuffmanNode.h"
 #include "ArrayList.h"
 #include "HashMap.h"
+#include "PriorityQueue.h"
 #include <string>
 
 namespace Structure {
@@ -36,11 +37,6 @@ private:
     // 链表存储结构：使用 ArrayList 存储节点
     ArrayList<HuffmanNode<unsigned char>> m_nodes;
     int m_root; // 根节点索引
-
-    // 辅助函数：在 m_nodes[0...endIndex] 中寻找两个权值最小且无父节点的节点
-    // s1 为最小，s2 为次小
-    // 结果通过引用参数返回
-    void select(int endIndex, int& s1, int& s2);
 };
 
 }
