@@ -116,7 +116,7 @@ namespace Structure
                 m_size = newSize;
             }
 
-            // 迭代器支持，用于范围 for 循环和算法
+            // 假装迭代器喵(?)以支持范围 for 循环和算法
             T* begin() { return m_data; }
             T* end() { return m_data + m_size; }
             const T* begin() const { return m_data; }

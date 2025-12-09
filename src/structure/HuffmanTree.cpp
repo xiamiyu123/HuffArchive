@@ -11,7 +11,7 @@ HuffmanTree::HuffmanTree() : m_root(-1) {
 HuffmanTree::~HuffmanTree() {
 }
 
-void HuffmanTree::build(const std::map<unsigned char, int>& frequencyMap) {
+void HuffmanTree::build(const HashMap<unsigned char, int>& frequencyMap) {
     m_nodes.clear();
     m_root = -1;
 
@@ -88,8 +88,8 @@ void HuffmanTree::select(int endIndex, int& s1, int& s2) {
 
 //Ciallo～ (∠・ω< )⌒★
 
-std::map<unsigned char, std::string> HuffmanTree::generateCodes() {
-    std::map<unsigned char, std::string> codes;
+HashMap<unsigned char, std::string> HuffmanTree::generateCodes() {
+    HashMap<unsigned char, std::string> codes;
     if (m_root == -1) return codes;
 
     int n = (m_nodes.size() + 1) / 2; // 叶子节点数量

@@ -2,7 +2,7 @@
 
 #include "HuffmanNode.h"
 #include "ArrayList.h"
-#include <map>
+#include "HashMap.h"
 #include <string>
 
 namespace Structure {
@@ -13,10 +13,10 @@ public:
     ~HuffmanTree();
 
     // 构建哈夫曼树
-    void build(const std::map<unsigned char, int>& frequencyMap);
+    void build(const HashMap<unsigned char, int>& frequencyMap);
 
     // 生成哈夫曼编码表
-    std::map<unsigned char, std::string> generateCodes();
+    HashMap<unsigned char, std::string> generateCodes();
 
     // 编码：将字节数组编码为 01 字符串
     std::string encode(const ArrayList<unsigned char>& data);
