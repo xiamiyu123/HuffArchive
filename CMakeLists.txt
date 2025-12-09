@@ -100,3 +100,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::MultimediaWidgets
         Qt6::Concurrent
 )
+
+# Windows 下自动运行 windeployqt 部署依赖的 DLL
+if(WIN32)
+    # 尝试查找 windeployqt 工具
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${Qt6_DIR}/../../../bin")
+    
+    if(WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${WINDEPLOYQT_EXECUTABLE} --no-translations --no-system-d3d-compiler --no-opengl-sw "$<TARGET_FILE:${PROJECT_NAME}>"
+            COMMENT "Running windeployqt to deploy Qt dependencies..."
+        )
+    else()
+        message(WARNING "windeployqt not found! You may need to copy DLLs manually.")
+    endif()
+endif()
