@@ -19,7 +19,8 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(MSVC)
         # MSVC 编译器使用 /W4 开启高等级警告
-        add_compile_options(/W4)
+        # /FS 强制同步写入 PDB 文件，解决多进程编译（如 sccache/ninja）时的 PDB 锁定问题
+        add_compile_options(/W4 /FS)
     else()
         # GCC/Clang 编译器使用 -Wall -Wextra
         add_compile_options(-Wall -Wextra)
