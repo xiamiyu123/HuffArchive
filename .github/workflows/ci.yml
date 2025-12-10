@@ -43,13 +43,13 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/Qt
-        key: ${{ runner.os }}-Qt-6.5.2
+        key: ${{ runner.os }}-Qt-6.5.2-v2
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.2'
-        dir: ${{ github.workspace }}/
+        dir: ${{ github.workspace }}
         no-qt-binaries: ${{ steps.cache-qt.outputs.cache-hit == 'true' }}
     - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
 
