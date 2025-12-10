@@ -10,25 +10,55 @@ jobs:
     runs-on: ${{ matrix.os }} # use value from the matrix
     steps:
     - name: Install dependencies (linux)
-      run: sudo apt install ninja-build
+      run: sudo apt install ninja-build ccache
       if: matrix.os == 'ubuntu-latest' # conditional, runs this step only on the Ubuntu runner
-    - name: Install Ninja (windows)    # Ninja is not available in GitHub-provided images,
-                                       # see https://github.com/actions/runner-images/issues/514
-      run: choco install ninja         # So let's install it through Chocolatey
+
+    - name: Cache compiler output (linux)
+      uses: actions/cache@v3
+      if: matrix.os == 'ubuntu-latest'
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-ccache-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+
+    - name: Install Ninja and sccache (windows)
       if: matrix.os == 'windows-latest'
+      run: |
+        choco install ninja sccache
+        echo "SCCACHE_DIR=${{ github.workspace }}/.sccache" >> $env:GITHUB_ENV
+
+    - name: Cache compiler output (windows)
+      uses: actions/cache@v3
+      if: matrix.os == 'windows-latest'
+      with:
+        path: ${{ github.workspace }}/.sccache
+        key: ${{ runner.os }}-sccache-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-sccache-
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.5.2'
-    - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER_LAUNCHER=sccachetially calls vcvarsall.bat for the latest VS in the runner for x64
     - uses: actions/checkout@v3    # Actually check out the sources. GH Actions can run for events that may not require
                                    # sources (e.g. when someone comments on an issue)
 
     # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
+    - name: Configure CMake (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: cmake -S . -B build -G "Ninja Multi-Config"
+
     - name: Build
-      # We don't need to set up the environment variable for CMake to see Qt because the install-qt-action
-      # sets up the necessary variables automatically
-      run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Debug
+      run: cmake --build build --config Debug
 
     - name: Test
+      env:
+        QT_QPA_PLATFORM: offscreen
       run: ctest --test-dir build -C Debug --output-on-failure
