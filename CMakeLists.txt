@@ -23,11 +23,14 @@ else()
 endif()
 
 # 查找所需的 Qt6 模块
-find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Multimedia MultimediaWidgets Concurrent REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Multimedia MultimediaWidgets Concurrent Test REQUIRED)
 
 # 源文件与头文件
 file(GLOB_RECURSE SOURCES src/*.cpp)
 file(GLOB_RECURSE HEADERS include/*.h)
+
+# 从 SOURCES 中移除 main.cpp，以便在测试中重用其他源文件
+list(FILTER SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 
 # 资源目录与文件列表
 set(IMAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resource")
@@ -57,13 +60,45 @@ endif()
 # 添加 Qt 资源
 qt6_add_resources(QRC_SOURCES ${GENERATED_QRC})
 
-# 生成可执行文件
-add_executable(${PROJECT_NAME}
-        ${SOURCES}
-        ${HEADERS}
-        ${QRC_SOURCES}
-
+# ==========================================
+# 核心库定义 (包含所有业务逻辑和 GUI 代码)
+# ==========================================
+add_library(HuffmanCore STATIC
+    ${SOURCES}
+    ${HEADERS}
+    ${QRC_SOURCES}
 )
+
+# 配置核心库的依赖 (PUBLIC 让链接这个库的目标自动获得这些依赖)
+target_link_libraries(HuffmanCore PUBLIC
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Svg
+    Qt6::OpenGL
+    Qt6::OpenGLWidgets
+    Qt6::Multimedia
+    Qt6::MultimediaWidgets
+    Qt6::Concurrent
+)
+
+target_include_directories(HuffmanCore PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_compile_definitions(HuffmanCore PUBLIC
+    $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>
+    $<$<CONFIG:Release>:QT_MESSAGELOGCONTEXT>
+    QT_USE_QSTRINGBUILDER
+    QT_FORCE_ASSERTS
+)
+
+# ==========================================
+# 主程序
+# ==========================================
+add_executable(${PROJECT_NAME} src/main.cpp)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE HuffmanCore)
 
 # Release 模式下的编译与链接优化
 if(MSVC)
@@ -74,32 +109,6 @@ else()
 endif()
 
 file(COPY ${CMAKE_SOURCE_DIR}/resource DESTINATION ${CMAKE_BINARY_DIR})
-
-# 编译定义
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>
-        $<$<CONFIG:Release>:QT_MESSAGELOGCONTEXT>
-        QT_USE_QSTRINGBUILDER
-        QT_FORCE_ASSERTS
-)
-
-# 包含目录
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-# 链接 Qt 库
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Widgets
-        Qt6::Svg
-        Qt6::OpenGL
-        Qt6::OpenGLWidgets
-        Qt6::Multimedia
-        Qt6::MultimediaWidgets
-        Qt6::Concurrent
-)
 
 # Windows 下自动运行 windeployqt 部署依赖的 DLL
 if(WIN32)
@@ -115,3 +124,10 @@ if(WIN32)
         message(WARNING "windeployqt not found! You may need to copy DLLs manually.")
     endif()
 endif()
+
+# ==========================================
+# 单元测试配置
+# ==========================================
+enable_testing()
+add_subdirectory(tests)
+
