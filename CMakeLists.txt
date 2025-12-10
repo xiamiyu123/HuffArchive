@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(Huffman LANGUAGES CXX)
 
 # 指定 C++ 标准
@@ -26,15 +26,15 @@ endif()
 find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Multimedia MultimediaWidgets Concurrent Test REQUIRED)
 
 # 源文件与头文件
-file(GLOB_RECURSE SOURCES src/*.cpp)
-file(GLOB_RECURSE HEADERS include/*.h)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS include/*.h)
 
 # 从 SOURCES 中移除 main.cpp，以便在测试中重用其他源文件
 list(FILTER SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 
 # 资源目录与文件列表
 set(IMAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resource")
-file(GLOB_RECURSE IMAGE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${IMAGE_DIR}/*")
+file(GLOB_RECURSE IMAGE_FILES CONFIGURE_DEPENDS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${IMAGE_DIR}/*")
 
 # 生成 qrc 文件路径
 set(GENERATED_QRC "${CMAKE_BINARY_DIR}/auto_resources.qrc")

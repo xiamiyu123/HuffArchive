@@ -4,7 +4,7 @@
 # ==========================================
 
 # 查找当前目录下所有的 .cpp 文件
-file(GLOB TEST_SOURCES "*.cpp")
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.cpp")
 
 foreach(TEST_SOURCE ${TEST_SOURCES})
     # 获取文件名（不含扩展名）作为测试目标名称，例如 tst_io.cpp -> tst_io
