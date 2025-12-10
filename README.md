@@ -1,4 +1,4 @@
-# DataStructureA05
+# DataStructureA051
 [![CI](https://github.com/xiamiyu123/DataStructureA05/actions/workflows/ci.yml/badge.svg)](https://github.com/xiamiyu123/DataStructureA05/actions/workflows/ci.yml)
 
 哈夫曼压缩软件设计
