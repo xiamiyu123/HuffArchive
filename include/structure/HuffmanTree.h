@@ -4,7 +4,7 @@
 #include "ArrayList.h"
 #include "HashMap.h"
 #include "PriorityQueue.h"
-#include <string>
+#include "String.h"
 
 namespace Structure {
 
@@ -17,15 +17,15 @@ public:
     void build(const HashMap<unsigned char, int>& frequencyMap);
 
     // 生成哈夫曼编码表
-    HashMap<unsigned char, std::string> generateCodes();
+    HashMap<unsigned char, String> generateCodes();
 
     // 编码：将字节数组编码为 01 字符串
-    std::string encode(const ArrayList<unsigned char>& data);
-    std::string encode(const unsigned char* data, int length);
+    String encode(const ArrayList<unsigned char>& data);
+    String encode(const unsigned char* data, int length);
 
     // 译码：将 01 字符串转换回原始字节流
     // 返回解码后的字节数组
-    ArrayList<unsigned char> decode(const std::string& binaryString);
+    ArrayList<unsigned char> decode(const String& binaryString);
 
     // 获取根节点索引
     int getRootIndex() const;

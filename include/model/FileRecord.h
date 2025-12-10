@@ -1,12 +1,12 @@
 #pragma once
 
-#include <string>
+#include "structure/String.h"
 
 namespace Model {
 
 struct FileRecord {
     // TODO: Define file record fields
-    std::string fileName;
+    Structure::String fileName;
     long originalSize;
     long compressedSize;
     // ...

@@ -1,25 +1,37 @@
 #include "io/FileHandler.h"
 #include <fstream>
 #include <iostream>
-#include <vector>
 
 namespace IO {
 
-std::string FileHandler::readText(const std::string& path) {
-    std::ifstream file(path);
+Structure::String FileHandler::readText(const Structure::String& path) {
+    std::ifstream file(path.c_str());
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << path << std::endl;
         return "";
     }
 
-    std::string content((std::istreambuf_iterator<char>(file)),
-                        std::istreambuf_iterator<char>());
+    file.seekg(0, std::ios::end);
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    if (size <= 0) return "";
+
+    char* buffer = new char[size + 1];
+    file.read(buffer, size);
+    // 在文本模式下，读取的字符数可能小于文件大小（例如 Windows 下 \r\n -> \n）
+    // read() 如果读不满会设置 failbit，但我们需要的是实际读取的内容
+    std::streamsize readBytes = file.gcount();
+    buffer[readBytes] = '\0';
+    
+    Structure::String content(buffer);
+    delete[] buffer;
     file.close();
     return content;
 }
 
-bool FileHandler::writeText(const std::string& path, const std::string& content) {
-    std::ofstream file(path);
+bool FileHandler::writeText(const Structure::String& path, const Structure::String& content) {
+    std::ofstream file(path.c_str());
     if (!file.is_open()) {
         std::cerr << "Failed to open file for writing: " << path << std::endl;
         return false;
@@ -30,9 +42,9 @@ bool FileHandler::writeText(const std::string& path, const std::string& content)
     return true;
 }
 
-Structure::ArrayList<unsigned char> FileHandler::readBinary(const std::string& path) {
+Structure::ArrayList<unsigned char> FileHandler::readBinary(const Structure::String& path) {
     Structure::ArrayList<unsigned char> data;
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    std::ifstream file(path.c_str(), std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
         std::cerr << "Failed to open binary file: " << path << std::endl;
         return data;
@@ -42,31 +54,22 @@ Structure::ArrayList<unsigned char> FileHandler::readBinary(const std::string& p
     file.seekg(0, std::ios::beg);
 
     if (size > 0) {
-        // 使用 std::vector 作为临时缓冲区，因为 ArrayList 可能没有 resize/data 方法直接暴露给 read
-        std::vector<char> buffer(size);
-        if (file.read(buffer.data(), size)) {
-            for (char c : buffer) {
-                data.add(static_cast<unsigned char>(c));
-            }
-        }
+        data.resize(size);
+        file.read(reinterpret_cast<char*>(data.data()), size);
     }
     
     file.close();
     return data;
 }
 
-bool FileHandler::writeBinary(const std::string& path, const Structure::ArrayList<unsigned char>& data) {
-    std::ofstream file(path, std::ios::binary);
+bool FileHandler::writeBinary(const Structure::String& path, const Structure::ArrayList<unsigned char>& data) {
+    std::ofstream file(path.c_str(), std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open binary file for writing: " << path << std::endl;
         return false;
     }
 
-    // ArrayList 应该支持迭代器或者索引访问
-    // 为了效率，如果 ArrayList 有 data() 方法最好，如果没有就循环写入
-    for (const auto& byte : data) {
-        file.put(static_cast<char>(byte));
-    }
+    file.write(reinterpret_cast<const char*>(data.data()), data.size());
 
     file.close();
     return true;

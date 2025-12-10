@@ -97,8 +97,8 @@ void HuffmanTree::build(const HashMap<unsigned char, int>& frequencyMap) {
 
 //Ciallo～ (∠・ω< )⌒★
 
-HashMap<unsigned char, std::string> HuffmanTree::generateCodes() {
-    HashMap<unsigned char, std::string> codes;
+HashMap<unsigned char, String> HuffmanTree::generateCodes() {
+    HashMap<unsigned char, String> codes;
     if (m_root == -1) return codes;
 
     int n = (m_nodes.size() + 1) / 2; // 叶子节点数量
@@ -111,7 +111,7 @@ HashMap<unsigned char, std::string> HuffmanTree::generateCodes() {
 
     // 遍历所有叶子节点
     for (int i = 0; i < n; ++i) {
-        std::string code = "";
+        String code = "";
         int current = i;
         int parent = m_nodes[current].parent;
 
@@ -134,7 +134,7 @@ HashMap<unsigned char, std::string> HuffmanTree::generateCodes() {
     return codes;
 }
 
-ArrayList<unsigned char> HuffmanTree::decode(const std::string& binaryString) {
+ArrayList<unsigned char> HuffmanTree::decode(const String& binaryString) {
     ArrayList<unsigned char> result;
     if (m_root == -1) return result;
 
@@ -164,17 +164,17 @@ const ArrayList<HuffmanNode<unsigned char>>& HuffmanTree::getNodes() const {
     return m_nodes;
 }
 
-std::string HuffmanTree::encode(const ArrayList<unsigned char>& data) {
+String HuffmanTree::encode(const ArrayList<unsigned char>& data) {
     return encode(data.begin(), data.size());
 }
 
-std::string HuffmanTree::encode(const unsigned char* data, int length) {
+String HuffmanTree::encode(const unsigned char* data, int length) {
     if (m_root == -1 || length == 0) return "";
 
     // 先生成编码表
     auto codes = generateCodes();
     
-    std::string result;
+    String result;
     for (int i = 0; i < length; ++i) {
         auto it = codes.find(data[i]);
         if (it != codes.end()) {

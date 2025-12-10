@@ -36,14 +36,14 @@ void TestIO::testBitStream()
     
     auto bytes = bs.getBytes();
     QCOMPARE(bytes.size(), 1);
-    QCOMPARE(bytes[0], 0xB9);
+    QCOMPARE(static_cast<int>(bytes[0]), 0xB9);
     
     // Test 2: Write bits from string
     bs.clear();
     bs.writeBits("11110000"); // 0xF0
     bytes = bs.getBytes();
     QCOMPARE(bytes.size(), 1);
-    QCOMPARE(bytes[0], 0xF0);
+    QCOMPARE(static_cast<int>(bytes[0]), 0xF0);
     
     // Test 3: Read bits
     bs.loadBytes(bytes);
@@ -62,15 +62,15 @@ void TestIO::testFileHandlerText()
 {
     QTemporaryFile file;
     if (file.open()) {
-        std::string path = file.fileName().toStdString();
-        std::string content = "Hello, World!\nTesting FileHandler.";
+        Structure::String path = file.fileName().toStdString().c_str();
+        Structure::String content = "Hello, World!\nTesting FileHandler.";
         
         // Write
         bool success = IO::FileHandler::writeText(path, content);
         QVERIFY(success);
         
         // Read
-        std::string readContent = IO::FileHandler::readText(path);
+        Structure::String readContent = IO::FileHandler::readText(path);
         QCOMPARE(readContent, content);
     }
 }
@@ -79,7 +79,7 @@ void TestIO::testFileHandlerBinary()
 {
     QTemporaryFile file;
     if (file.open()) {
-        std::string path = file.fileName().toStdString();
+        Structure::String path = file.fileName().toStdString().c_str();
         Structure::ArrayList<unsigned char> data;
         data.add(0x00);
         data.add(0xFF);

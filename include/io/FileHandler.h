@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include "structure/String.h"
 #include "structure/ArrayList.h"
 
 namespace IO {
@@ -11,16 +11,16 @@ public:
     ~FileHandler() = default;
 
     // 读取文本文件
-    static std::string readText(const std::string& path);
+    static Structure::String readText(const Structure::String& path);
     
     // 写入文本文件
-    static bool writeText(const std::string& path, const std::string& content);
+    static bool writeText(const Structure::String& path, const Structure::String& content);
 
     // 读取二进制文件
-    static Structure::ArrayList<unsigned char> readBinary(const std::string& path);
+    static Structure::ArrayList<unsigned char> readBinary(const Structure::String& path);
 
     // 写入二进制文件
-    static bool writeBinary(const std::string& path, const Structure::ArrayList<unsigned char>& data);
+    static bool writeBinary(const Structure::String& path, const Structure::ArrayList<unsigned char>& data);
 };
 
 }

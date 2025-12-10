@@ -116,6 +116,39 @@ namespace Structure
                 m_size = newSize;
             }
 
+            void reserve(int newCapacity) {
+                if (newCapacity > m_capacity) {
+                    reallocate(newCapacity);
+                }
+            }
+
+            T* data() { return m_data; }
+            const T* data() const { return m_data; }
+
+            void pop_back() {
+                if (m_size > 0) m_size--;
+            }
+
+            T& back() {
+                if (m_size == 0) throw std::out_of_range("ArrayList is empty");
+                return m_data[m_size - 1];
+            }
+            
+            const T& back() const {
+                if (m_size == 0) throw std::out_of_range("ArrayList is empty");
+                return m_data[m_size - 1];
+            }
+
+            T& front() {
+                if (m_size == 0) throw std::out_of_range("ArrayList is empty");
+                return m_data[0];
+            }
+
+            const T& front() const {
+                if (m_size == 0) throw std::out_of_range("ArrayList is empty");
+                return m_data[0];
+            }
+
             // 假装迭代器喵(?)以支持范围 for 循环和算法
             T* begin() { return m_data; }
             T* end() { return m_data + m_size; }

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include "structure/String.h"
 #include "structure/ArrayList.h"
 
 namespace IO {
@@ -15,7 +14,7 @@ public:
     void writeBit(int bit);
 
     // 写入多个位（从字符串 "0101..."）
-    void writeBits(const std::string& bits);
+    void writeBits(const Structure::String& bits);
 
     // 写入一个字节（8位）
     void writeByte(unsigned char byte);

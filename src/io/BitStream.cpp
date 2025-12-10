@@ -29,7 +29,7 @@ void BitStream::writeBit(int bit) {
     }
 }
 
-void BitStream::writeBits(const std::string& bits) {
+void BitStream::writeBits(const Structure::String& bits) {
     for (char c : bits) {
         if (c == '0') {
             writeBit(0);
