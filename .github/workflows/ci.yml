@@ -50,7 +50,7 @@ jobs:
       with:
         version: '6.5.2'
         dir: ${{ github.workspace }}/
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        no-qt-binaries: ${{ steps.cache-qt.outputs.cache-hit == 'true' }}
     - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
 
     # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
