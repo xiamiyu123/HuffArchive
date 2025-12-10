@@ -17,13 +17,24 @@ endif()
 
 # 不同构建类型下的编译选项
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options(-Wall -Wextra)
+    if(MSVC)
+        # MSVC 编译器使用 /W4 开启高等级警告
+        add_compile_options(/W4)
+    else()
+        # GCC/Clang 编译器使用 -Wall -Wextra
+        add_compile_options(-Wall -Wextra)
+    endif()
 else()
-    add_compile_options(-O2)
+    if(MSVC)
+        # MSVC 优化选项通常默认已有，或者使用 /O2
+        add_compile_options(/O2)
+    else()
+        add_compile_options(-O2)
+    endif()
 endif()
 
 # 查找所需的 Qt6 模块
-find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Multimedia MultimediaWidgets Concurrent Test REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Concurrent Test REQUIRED)
 
 # 源文件与头文件
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
@@ -77,8 +88,6 @@ target_link_libraries(HuffmanCore PUBLIC
     Qt6::Svg
     Qt6::OpenGL
     Qt6::OpenGLWidgets
-    Qt6::Multimedia
-    Qt6::MultimediaWidgets
     Qt6::Concurrent
 )
 
