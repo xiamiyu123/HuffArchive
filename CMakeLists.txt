@@ -77,8 +77,6 @@ target_link_libraries(HuffmanCore PUBLIC
     Qt6::Svg
     Qt6::OpenGL
     Qt6::OpenGLWidgets
-    Qt6::Multimedia
-    Qt6::MultimediaWidgets
     Qt6::Concurrent
 )
 
