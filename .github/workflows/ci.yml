@@ -22,20 +22,21 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-ccache-
 
-    - name: Install Ninja and sccache (windows)
+    - name: Install Ninja (windows)
       if: matrix.os == 'windows-latest'
       run: |
-        choco install ninja sccache
-        echo "SCCACHE_DIR=${{ github.workspace }}/.sccache" >> $env:GITHUB_ENV
+        choco install ninja
+        # choco install ninja sccache
+        # echo "SCCACHE_DIR=${{ github.workspace }}/.sccache" >> $env:GITHUB_ENV
 
-    - name: Cache compiler output (windows)
-      uses: actions/cache@v3
-      if: matrix.os == 'windows-latest'
-      with:
-        path: ${{ github.workspace }}/.sccache
-        key: ${{ runner.os }}-sccache-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-sccache-
+    # - name: Cache compiler output (windows)
+    #   uses: actions/cache@v3
+    #   if: matrix.os == 'windows-latest'
+    #   with:
+    #     path: ${{ github.workspace }}/.sccache
+    #     key: ${{ runner.os }}-sccache-${{ github.sha }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-sccache-
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
@@ -53,7 +54,7 @@ jobs:
 
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
-      run: cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      run: cmake -S . -B build -G "Ninja Multi-Config" # -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
     - name: Build
       run: cmake --build build --config Debug
