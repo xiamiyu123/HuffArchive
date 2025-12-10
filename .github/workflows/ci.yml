@@ -14,7 +14,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' # conditional, runs this step only on the Ubuntu runner
 
     - name: Cache compiler output (linux)
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       if: matrix.os == 'ubuntu-latest'
       with:
         path: ~/.ccache
@@ -29,7 +29,7 @@ jobs:
         echo "SCCACHE_DIR=${{ github.workspace }}/.sccache" >> $env:GITHUB_ENV
 
     - name: Cache compiler output (windows)
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       if: matrix.os == 'windows-latest'
       with:
         path: ${{ github.workspace }}/.sccache
@@ -37,11 +37,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-sccache-
 
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/Qt
+        key: ${{ runner.os }}-Qt-6.5.2
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.2'
-        cache: 'true'
+        dir: ${{ github.workspace }}/
     - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
     - uses: actions/checkout@v3    # Actually check out the sources. GH Actions can run for events that may not require
                                    # sources (e.g. when someone comments on an issue)
