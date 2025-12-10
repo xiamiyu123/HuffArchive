@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include "structure/HuffmanTree.h"
 
 namespace View {
 
@@ -11,7 +12,15 @@ public:
     explicit TreeVisualizer(QWidget *parent = nullptr);
     ~TreeVisualizer();
 
-    // TODO: Add drawing logic for Huffman Tree
+    void setTree(const Structure::HuffmanTree* tree);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    const Structure::HuffmanTree* m_tree;
+    
+    void drawNode(QPainter& painter, int nodeIndex, int x, int y, int hGap);
 };
 
 }
