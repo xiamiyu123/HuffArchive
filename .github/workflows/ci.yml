@@ -9,6 +9,7 @@ jobs:
         os: [ubuntu-latest, windows-latest] # we build on GitHub-provided Windows and Linux images
     runs-on: ${{ matrix.os }} # use value from the matrix
     steps:
+    - uses: actions/checkout@v3
     - name: Install dependencies (linux)
       run: sudo apt install ninja-build ccache
       if: matrix.os == 'ubuntu-latest' # conditional, runs this step only on the Ubuntu runner
@@ -49,9 +50,8 @@ jobs:
       with:
         version: '6.5.2'
         dir: ${{ github.workspace }}/
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
     - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
-    - uses: actions/checkout@v3    # Actually check out the sources. GH Actions can run for events that may not require
-                                   # sources (e.g. when someone comments on an issue)
 
     # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
     - name: Configure CMake (Linux)
