@@ -22,6 +22,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         # /FS 强制同步写入 PDB 文件，解决多进程编译（如 sccache/ninja）时的 PDB 锁定问题
         # /Z7 将调试信息包含在 .obj 文件中，避免 PDB 文件锁竞争
         add_compile_options(/W4 /FS /Z7)
+        # 显式禁用 PDB 生成，防止 sccache 尝试查找不存在的 PDB 文件
+        string(REPLACE "/Zi" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+        string(REPLACE "/Zi" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
     else()
         # GCC/Clang 编译器使用 -Wall -Wextra
         add_compile_options(-Wall -Wextra)
