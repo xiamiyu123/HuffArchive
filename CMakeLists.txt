@@ -23,7 +23,7 @@ else()
 endif()
 
 # 查找所需的 Qt6 模块
-find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Multimedia MultimediaWidgets Concurrent Test REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Concurrent Test REQUIRED)
 
 # 源文件与头文件
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
@@ -77,8 +77,6 @@ target_link_libraries(HuffmanCore PUBLIC
     Qt6::Svg
     Qt6::OpenGL
     Qt6::OpenGLWidgets
-    Qt6::Multimedia
-    Qt6::MultimediaWidgets
     Qt6::Concurrent
 )
 
