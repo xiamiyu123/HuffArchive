@@ -1,6 +1,7 @@
 #include "structure/String.h"
 #include <cstring>
 #include <algorithm>
+#include <stdexcept>
 
 namespace Structure {
 
@@ -217,6 +218,70 @@ char* String::begin() { return m_data; }
 char* String::end() { return m_data + m_length; }
 const char* String::begin() const { return m_data; }
 const char* String::end() const { return m_data + m_length; }
+
+bool String::operator>(const String& other) const {
+    return std::strcmp(m_data, other.m_data) > 0;
+}
+
+bool String::operator<=(const String& other) const {
+    return !(*this > other);
+}
+
+bool String::operator>=(const String& other) const {
+    return !(*this < other);
+}
+
+void String::clear() {
+    m_length = 0;
+    m_data[0] = '\0';
+}
+
+void String::swap(String& other) {
+    std::swap(m_data, other.m_data);
+    std::swap(m_length, other.m_length);
+    std::swap(m_capacity, other.m_capacity);
+}
+
+char& String::at(int index) {
+    if (index < 0 || index >= m_length) {
+        throw std::out_of_range("String index out of range");
+    }
+    return m_data[index];
+}
+
+const char& String::at(int index) const {
+    if (index < 0 || index >= m_length) {
+        throw std::out_of_range("String index out of range");
+    }
+    return m_data[index];
+}
+
+void String::push_back(char c) {
+    *this += c;
+}
+
+void String::pop_back() {
+    if (m_length > 0) {
+        m_length--;
+        m_data[m_length] = '\0';
+    }
+}
+
+char& String::front() {
+    return m_data[0];
+}
+
+const char& String::front() const {
+    return m_data[0];
+}
+
+char& String::back() {
+    return m_data[m_length - 1];
+}
+
+const char& String::back() const {
+    return m_data[m_length - 1];
+}
 
 std::ostream& operator<<(std::ostream& os, const String& str) {
     os << str.m_data;

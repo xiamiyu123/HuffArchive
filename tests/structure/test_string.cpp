@@ -14,7 +14,10 @@ private slots:
     void testAssignment();
     void testConcatenation();
     void testComparison();
+    void testExtendedComparison();
     void testAccess();
+    void testElementAccess();
+    void testModification();
     void testSubstr();
     void testFind();
 };
@@ -145,6 +148,92 @@ void TestString::testFind()
     
     std::cout << "✓ 测试用例: testFind - 通过";
     std::cout << "========================================\n";
+}
+
+void TestString::testExtendedComparison()
+{
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testExtendedComparison - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    String s1 = "Apple";
+    String s2 = "Banana";
+    String s3 = "Apple";
+
+    QVERIFY(s2 > s1);
+    QVERIFY(s1 <= s3);
+    QVERIFY(s1 >= s3);
+    QVERIFY(s2 >= s1);
+    
+    std::cout << "✓ 测试用例: testExtendedComparison - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+}
+
+void TestString::testElementAccess()
+{
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testElementAccess - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    String s = "Hello";
+    
+    // Test at()
+    QCOMPARE(s.at(0), 'H');
+    QCOMPARE(s.at(4), 'o');
+    
+    bool exceptionCaught = false;
+    try {
+        s.at(5);
+    } catch (const std::out_of_range&) {
+        exceptionCaught = true;
+    }
+    QVERIFY(exceptionCaught);
+
+    // Test front() and back()
+    QCOMPARE(s.front(), 'H');
+    QCOMPARE(s.back(), 'o');
+    
+    // Modify via references
+    s.front() = 'h';
+    s.back() = 'O';
+    QCOMPARE(strcmp(s.c_str(), "hellO"), 0);
+
+    std::cout << "✓ 测试用例: testElementAccess - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+}
+
+void TestString::testModification()
+{
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testModification - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    String s = "Hello";
+    
+    // Test push_back
+    s.push_back('!');
+    QCOMPARE(strcmp(s.c_str(), "Hello!"), 0);
+    QCOMPARE(s.length(), 6);
+
+    // Test pop_back
+    s.pop_back();
+    QCOMPARE(strcmp(s.c_str(), "Hello"), 0);
+    QCOMPARE(s.length(), 5);
+    
+    // Test clear
+    s.clear();
+    QVERIFY(s.empty());
+    QCOMPARE(s.length(), 0);
+    
+    // Test swap
+    String s1 = "ABC";
+    String s2 = "DEF";
+    s1.swap(s2);
+    QCOMPARE(strcmp(s1.c_str(), "DEF"), 0);
+    QCOMPARE(strcmp(s2.c_str(), "ABC"), 0);
+
+    std::cout << "✓ 测试用例: testModification - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 QTEST_APPLESS_MAIN(TestString)

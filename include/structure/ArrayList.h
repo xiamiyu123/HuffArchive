@@ -45,6 +45,13 @@ namespace Structure
                 }
             }
 
+            // 移动构造函数
+            ArrayList(ArrayList&& other) noexcept : m_data(other.m_data), m_size(other.m_size), m_capacity(other.m_capacity) {
+                other.m_data = nullptr;
+                other.m_size = 0;
+                other.m_capacity = 0;
+            }
+
             // 赋值运算符
             ArrayList& operator=(const ArrayList& other) {
                 if (this != &other) {
@@ -55,6 +62,22 @@ namespace Structure
                     for (int i = 0; i < m_size; ++i) {
                         m_data[i] = other.m_data[i];
                     }
+                }
+                return *this;
+            }
+
+            // 移动赋值运算符
+            ArrayList& operator=(ArrayList&& other) noexcept {
+                if (this != &other) {
+                    if (m_data) delete[] m_data;
+                    
+                    m_data = other.m_data;
+                    m_size = other.m_size;
+                    m_capacity = other.m_capacity;
+                    
+                    other.m_data = nullptr;
+                    other.m_size = 0;
+                    other.m_capacity = 0;
                 }
                 return *this;
             }
@@ -98,6 +121,61 @@ namespace Structure
             }
 
             int size() const { return m_size; }
+            int capacity() const { return m_capacity; }
+
+            void shrink_to_fit() {
+                if (m_size < m_capacity) {
+                    // 如果为空，释放内存
+                    if (m_size == 0) {
+                        delete[] m_data;
+                        m_data = nullptr;
+                        m_capacity = 0;
+                    } else {
+                        // 重新分配精确大小
+                        T* newData = new T[m_size];
+                        for (int i = 0; i < m_size; ++i) {
+                            newData[i] = m_data[i]; // 假设 T 支持拷贝
+                        }
+                        delete[] m_data;
+                        m_data = newData;
+                        m_capacity = m_size;
+                    }
+                }
+            }
+
+            void insert(int index, const T& item) {
+                if (index < 0 || index > m_size) throw std::out_of_range("Index out of range");
+                
+                if (m_size == m_capacity) {
+                    int newCapacity = (m_capacity == 0) ? 4 : static_cast<int>(m_capacity * GROWTH_FACTOR);
+                    reallocate(newCapacity);
+                }
+
+                // 移动元素
+                for (int i = m_size; i > index; --i) {
+                    m_data[i] = m_data[i - 1];
+                }
+                
+                m_data[index] = item;
+                m_size++;
+            }
+
+            void swap(ArrayList& other) noexcept {
+                std::swap(m_data, other.m_data);
+                std::swap(m_size, other.m_size);
+                std::swap(m_capacity, other.m_capacity);
+            }
+
+            int indexOf(const T& item) const {
+                for (int i = 0; i < m_size; ++i) {
+                    if (m_data[i] == item) return i;
+                }
+                return -1;
+            }
+
+            bool contains(const T& item) const {
+                return indexOf(item) != -1;
+            }
             
             bool empty() const { return m_size == 0; }
             
