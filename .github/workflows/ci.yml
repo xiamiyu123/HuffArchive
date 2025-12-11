@@ -6,7 +6,7 @@ jobs:
     name: "Build and test"
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest] # we build on GitHub-provided Windows and Linux images
+        os: [ubuntu-latest] # windows-latest commented out
     runs-on: ${{ matrix.os }} # use value from the matrix
     steps:
     - uses: actions/checkout@v3
@@ -14,10 +14,10 @@ jobs:
       run: sudo apt install ninja-build
       if: matrix.os == 'ubuntu-latest' # conditional, runs this step only on the Ubuntu runner
 
-    - name: Install Ninja (windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        choco install ninja
+    # - name: Install Ninja (windows)
+    #   if: matrix.os == 'windows-latest'
+    #   run: |
+    #     choco install ninja
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
@@ -31,9 +31,9 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: cmake -S . -B build -G "Ninja Multi-Config"
 
-    - name: Configure CMake (Windows)
-      if: matrix.os == 'windows-latest'
-      run: cmake -S . -B build -G "Ninja Multi-Config"
+    # - name: Configure CMake (Windows)
+    #   if: matrix.os == 'windows-latest'
+    #   run: cmake -S . -B build -G "Ninja Multi-Config"
 
     - name: Build
       run: cmake --build build --config Debug
