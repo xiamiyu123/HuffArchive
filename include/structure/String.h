@@ -45,6 +45,20 @@ public:
     bool operator==(const char* other) const;
     bool operator!=(const char* other) const;
     bool operator<(const String& other) const;
+    bool operator>(const String& other) const;
+    bool operator<=(const String& other) const;
+    bool operator>=(const String& other) const;
+
+    void clear();
+    void swap(String& other);
+    char& at(int index);
+    const char& at(int index) const;
+    void push_back(char c);
+    void pop_back();
+    char& front();
+    const char& front() const;
+    char& back();
+    const char& back() const;
 
     String substr(int pos, int len = -1) const;
     int find(char c, int pos = 0) const;

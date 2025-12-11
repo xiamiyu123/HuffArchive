@@ -12,6 +12,8 @@ private slots:
     void testMinHeap();
     void testMaxHeap();
     void testCustomComparator();
+    void testBuildFromList();
+    void testClearAndSwap();
     void testEmpty();
 };
 
@@ -111,6 +113,65 @@ void TestPriorityQueue::testCustomComparator()
     QCOMPARE(pq.top().priority, 10);
     
     std::cout << "✓ 测试用例: testCustomComparator - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+}
+
+void TestPriorityQueue::testBuildFromList()
+{
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testBuildFromList - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    ArrayList<int> list;
+    list.add(5);
+    list.add(1);
+    list.add(10);
+    list.add(3);
+    list.add(7);
+
+    // Build min heap from list
+    PriorityQueue<int> pq(list);
+    
+    QCOMPARE(pq.size(), 5);
+    QCOMPARE(pq.top(), 1);
+    pq.pop();
+    QCOMPARE(pq.top(), 3);
+    pq.pop();
+    QCOMPARE(pq.top(), 5);
+    pq.pop();
+    QCOMPARE(pq.top(), 7);
+    pq.pop();
+    QCOMPARE(pq.top(), 10);
+
+    std::cout << "✓ 测试用例: testBuildFromList - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
+}
+
+void TestPriorityQueue::testClearAndSwap()
+{
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testClearAndSwap - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
+
+    PriorityQueue<int> pq1;
+    pq1.push(1);
+    pq1.push(2);
+    
+    PriorityQueue<int> pq2;
+    pq2.push(3);
+    
+    pq1.swap(pq2);
+    
+    QCOMPARE(pq1.size(), 1);
+    QCOMPARE(pq1.top(), 3);
+    QCOMPARE(pq2.size(), 2);
+    QCOMPARE(pq2.top(), 1);
+    
+    pq2.clear();
+    QVERIFY(pq2.empty());
+    QCOMPARE(pq2.size(), 0);
+
+    std::cout << "✓ 测试用例: testClearAndSwap - 通过" << std::endl;
     std::cout << "========================================\n" << std::endl;
 }
 

@@ -56,6 +56,14 @@ namespace Structure {
         // 传入自定义比较器的构造函数
         PriorityQueue(Compare comp) : m_comp(comp) {}
 
+        // O(n) 建堆构造函数
+        PriorityQueue(const ArrayList<T>& items, Compare comp = Compare()) : m_data(items), m_comp(comp) {
+            // 从最后一个非叶子节点开始下沉
+            for (int i = (m_data.size() / 2) - 1; i >= 0; --i) {
+                sink(i);
+            }
+        }
+
         void push(const T& value) {
             m_data.add(value);
             swim(m_data.size() - 1);
@@ -73,7 +81,12 @@ namespace Structure {
             }
         }
 
-        T top() {
+        T& top() {
+            if (empty()) throw std::out_of_range("PriorityQueue is empty");
+            return m_data[0];
+        }
+
+        const T& top() const {
             if (empty()) throw std::out_of_range("PriorityQueue is empty");
             return m_data[0];
         }
@@ -84,6 +97,15 @@ namespace Structure {
 
         int size() const {
             return m_data.size();
+        }
+
+        void clear() {
+            m_data.clear();
+        }
+
+        void swap(PriorityQueue& other) noexcept {
+            m_data.swap(other.m_data);
+            std::swap(m_comp, other.m_comp);
         }
     };
 }

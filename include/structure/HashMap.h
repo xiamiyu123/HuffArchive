@@ -80,6 +80,31 @@ namespace Structure {
             return *this;
         }
 
+        // 移动构造函数
+        HashMap(HashMap&& other) noexcept 
+            : m_buckets(other.m_buckets), m_size(other.m_size), m_capacity(other.m_capacity) {
+            other.m_buckets = nullptr;
+            other.m_size = 0;
+            other.m_capacity = 0;
+        }
+
+        // 移动赋值运算符
+        HashMap& operator=(HashMap&& other) noexcept {
+            if (this != &other) {
+                clear();
+                delete[] m_buckets;
+                
+                m_buckets = other.m_buckets;
+                m_size = other.m_size;
+                m_capacity = other.m_capacity;
+                
+                other.m_buckets = nullptr;
+                other.m_size = 0;
+                other.m_capacity = 0;
+            }
+            return *this;
+        }
+
         void put(const K& key, const V& value) {
             if (m_size >= m_capacity * LOAD_FACTOR) {
                 rehash(m_capacity * 2);
@@ -112,6 +137,58 @@ namespace Structure {
                 current = current->next;
             }
             return false;
+        }
+
+        bool remove(const K& key) {
+            int index = hash(key);
+            Entry* current = m_buckets[index];
+            Entry* prev = nullptr;
+
+            while (current) {
+                if (current->first == key) {
+                    if (prev) {
+                        prev->next = current->next;
+                    } else {
+                        m_buckets[index] = current->next;
+                    }
+                    delete current;
+                    m_size--;
+                    return true;
+                }
+                prev = current;
+                current = current->next;
+            }
+            return false;
+        }
+
+        V& at(const K& key) {
+            int index = hash(key);
+            Entry* current = m_buckets[index];
+            while (current) {
+                if (current->first == key) {
+                    return current->second;
+                }
+                current = current->next;
+            }
+            throw std::out_of_range("Key not found in HashMap");
+        }
+
+        const V& at(const K& key) const {
+            int index = hash(key);
+            Entry* current = m_buckets[index];
+            while (current) {
+                if (current->first == key) {
+                    return current->second;
+                }
+                current = current->next;
+            }
+            throw std::out_of_range("Key not found in HashMap");
+        }
+
+        void swap(HashMap& other) noexcept {
+            std::swap(m_buckets, other.m_buckets);
+            std::swap(m_size, other.m_size);
+            std::swap(m_capacity, other.m_capacity);
         }
 
         V& operator[](const K& key) {
