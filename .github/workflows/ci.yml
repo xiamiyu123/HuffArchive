@@ -11,56 +11,29 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies (linux)
-      run: sudo apt install ninja-build ccache
+      run: sudo apt install ninja-build
       if: matrix.os == 'ubuntu-latest' # conditional, runs this step only on the Ubuntu runner
 
-    - name: Cache compiler output (linux)
-      uses: actions/cache@v4
-      if: matrix.os == 'ubuntu-latest'
-      with:
-        path: ~/.ccache
-        key: ${{ runner.os }}-ccache-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-ccache-
-
-    - name: Install Ninja and sccache (windows)
+    - name: Install Ninja (windows)
       if: matrix.os == 'windows-latest'
       run: |
-        choco install ninja sccache
-        echo "SCCACHE_DIR=${{ github.workspace }}/.sccache" >> $env:GITHUB_ENV
-
-    - name: Cache compiler output (windows)
-      uses: actions/cache@v4
-      if: matrix.os == 'windows-latest'
-      with:
-        path: ${{ github.workspace }}/.sccache
-        key: ${{ runner.os }}-sccache-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-sccache-
-
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v4
-      with:
-        path: ${{ github.workspace }}/Qt
-        key: ${{ runner.os }}-Qt-6.5.2-v2
+        choco install ninja
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.2'
         dir: ${{ github.workspace }}
-        no-qt-binaries: ${{ steps.cache-qt.outputs.cache-hit == 'true' }}
     - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
 
     # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
     - name: Configure CMake (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: cmake -S . -B build -G "Ninja Multi-Config"
 
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
-      run: cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+      run: cmake -S . -B build -G "Ninja Multi-Config"
 
     - name: Build
       run: cmake --build build --config Debug
