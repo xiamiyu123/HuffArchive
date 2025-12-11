@@ -102,8 +102,8 @@ private slots:
                                                  Structure::String(decompressDir.string().c_str()));
         decompressCmd.execute();
 
-        // 验证解压后的文件内容
-        fs::path decompressedFile = decompressDir / "test_compress_decompress.txt";
+        // 验证解压后的文件内容 (文件名是原始文件名，不是压缩文件名)
+        fs::path decompressedFile = decompressDir / "compress_decompress.txt";
         QVERIFY(fs::exists(decompressedFile));
 
         // 读取并比较内容

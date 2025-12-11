@@ -8,6 +8,7 @@ class String {
 private:
     char* m_data;
     int m_length;
+    int m_capacity;  // 新增：当前分配的容量（不含终止符）
 
 public:
     String();
@@ -25,6 +26,10 @@ public:
     bool empty() const;
     const char* c_str() const;
     char* data();
+    int capacity() const;  // 新增：获取当前容量
+
+    // 新增：预分配容量，避免频繁重新分配
+    void reserve(int newCapacity);
 
     char& operator[](int index);
     const char& operator[](int index) const;
