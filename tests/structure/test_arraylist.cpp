@@ -17,6 +17,10 @@ private slots:
 
 void TestArrayList::testAddAndGet()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testAddAndGet - 开始";
+    qInfo() << "========================================";
+    
     ArrayList<int> list;
     QCOMPARE(list.size(), 0);
 
@@ -29,10 +33,17 @@ void TestArrayList::testAddAndGet()
     QCOMPARE(list.get(1), 20);
     QCOMPARE(list.get(2), 30);
     QCOMPARE(list[1], 20);
+    
+    qInfo() << "✓ 测试用例: testAddAndGet - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestArrayList::testRemove()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testRemove - 开始";
+    qInfo() << "========================================";
+    
     ArrayList<int> list;
     list.add(1);
     list.add(2);
@@ -43,10 +54,17 @@ void TestArrayList::testRemove()
     QCOMPARE(list.size(), 2);
     QCOMPARE(list.get(0), 1);
     QCOMPARE(list.get(1), 3);
+    
+    qInfo() << "✓ 测试用例: testRemove - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestArrayList::testCopyConstructor()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testCopyConstructor - 开始";
+    qInfo() << "========================================";
+    
     ArrayList<int> list1;
     list1.add(100);
     list1.add(200);
@@ -61,10 +79,17 @@ void TestArrayList::testCopyConstructor()
     list2.add(300);
     QCOMPARE(list1.size(), 2);
     QCOMPARE(list2.size(), 3);
+    
+    qInfo() << "✓ 测试用例: testCopyConstructor - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestArrayList::testAssignmentOperator()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testAssignmentOperator - 开始";
+    qInfo() << "========================================";
+    
     ArrayList<int> list1;
     list1.add(1);
     
@@ -77,16 +102,26 @@ void TestArrayList::testAssignmentOperator()
     QCOMPARE(list1.size(), 2);
     QCOMPARE(list1.get(0), 2);
     QCOMPARE(list1.get(1), 3);
+    
+    qInfo() << "✓ 测试用例: testAssignmentOperator - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestArrayList::testOutOfBounds()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testOutOfBounds - 开始";
+    qInfo() << "========================================";
+    
     ArrayList<int> list;
     list.add(1);
 
     QVERIFY_EXCEPTION_THROWN(list.get(1), std::out_of_range);
     QVERIFY_EXCEPTION_THROWN(list.get(-1), std::out_of_range);
     QVERIFY_EXCEPTION_THROWN(list.remove(1), std::out_of_range);
+    
+    qInfo() << "✓ 测试用例: testOutOfBounds - 通过";
+    qInfo() << "========================================\n";
 }
 
 QTEST_APPLESS_MAIN(TestArrayList)

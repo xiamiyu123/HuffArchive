@@ -18,9 +18,14 @@ private slots:
 
 void TestIO::testBitStream()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testBitStream - 开始";
+    qInfo() << "========================================";
+    
     IO::BitStream bs;
     
     // Test 1: Write bits manually
+    qInfo() << "测试 1: 手动写入位";
     bs.writeBit(1);
     bs.writeBit(0);
     bs.writeBit(1);
@@ -39,6 +44,7 @@ void TestIO::testBitStream()
     QCOMPARE(static_cast<int>(bytes[0]), 0xB9);
     
     // Test 2: Write bits from string
+    qInfo() << "测试 2: 从字符串写入位";
     bs.clear();
     bs.writeBits("11110000"); // 0xF0
     bytes = bs.getBytes();
@@ -46,6 +52,7 @@ void TestIO::testBitStream()
     QCOMPARE(static_cast<int>(bytes[0]), 0xF0);
     
     // Test 3: Read bits
+    qInfo() << "测试 3: 读取位";
     bs.loadBytes(bytes);
     QCOMPARE(bs.readBit(), 1);
     QCOMPARE(bs.readBit(), 1);
@@ -56,10 +63,17 @@ void TestIO::testBitStream()
     QCOMPARE(bs.readBit(), 0);
     QCOMPARE(bs.readBit(), 0);
     QCOMPARE(bs.readBit(), -1); // EOF
+    
+    qInfo() << "✓ 测试用例: testBitStream - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestIO::testFileHandlerText()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testFileHandlerText - 开始";
+    qInfo() << "========================================";
+    
     QTemporaryFile file;
     if (file.open()) {
         Structure::String path = file.fileName().toStdString().c_str();
@@ -70,13 +84,21 @@ void TestIO::testFileHandlerText()
         QVERIFY(success);
         
         // Read
+        qInfo() << "读取文本文件";
         Structure::String readContent = IO::FileHandler::readText(path);
         QCOMPARE(readContent, content);
+        
+        qInfo() << "✓ 测试用例: testFileHandlerText - 通过";
     }
+    qInfo() << "========================================\n";
 }
 
 void TestIO::testFileHandlerBinary()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testFileHandlerBinary - 开始";
+    qInfo() << "========================================";
+    
     QTemporaryFile file;
     if (file.open()) {
         Structure::String path = file.fileName().toStdString().c_str();
@@ -91,12 +113,16 @@ void TestIO::testFileHandlerBinary()
         QVERIFY(success);
         
         // Read
+        qInfo() << "读取二进制文件";
         auto readData = IO::FileHandler::readBinary(path);
         QCOMPARE(readData.size(), data.size());
         for (int i = 0; i < data.size(); ++i) {
             QCOMPARE(readData[i], data[i]);
         }
+        
+        qInfo() << "✓ 测试用例: testFileHandlerBinary - 通过";
     }
+    qInfo() << "========================================\n";
 }
 
 QTEST_MAIN(TestIO)

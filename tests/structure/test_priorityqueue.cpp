@@ -16,6 +16,10 @@ private slots:
 
 void TestPriorityQueue::testMinHeap()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testMinHeap - 开始";
+    qInfo() << "========================================";
+    
     // Default is min heap (std::less)
     PriorityQueue<int> pq;
     pq.push(30);
@@ -33,10 +37,17 @@ void TestPriorityQueue::testMinHeap()
     
     pq.pop();
     QVERIFY(pq.empty());
+    
+    qInfo() << "✓ 测试用例: testMinHeap - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestPriorityQueue::testMaxHeap()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testMaxHeap - 开始";
+    qInfo() << "========================================";
+    
     // Use std::greater for max heap
     PriorityQueue<int, std::greater<int>> pq;
     pq.push(10);
@@ -50,6 +61,9 @@ void TestPriorityQueue::testMaxHeap()
     
     pq.pop();
     QCOMPARE(pq.top(), 10);
+    
+    qInfo() << "✓ 测试用例: testMaxHeap - 通过";
+    qInfo() << "========================================\n";
 }
 
 struct CustomStruct {
@@ -80,6 +94,10 @@ struct CustomComparator {
 
 void TestPriorityQueue::testCustomComparator()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testCustomComparator - 开始";
+    qInfo() << "========================================";
+    
     PriorityQueue<CustomStruct, CustomComparator> pq;
     pq.push({1, 10});
     pq.push({2, 30});
@@ -90,10 +108,17 @@ void TestPriorityQueue::testCustomComparator()
     QCOMPARE(pq.top().priority, 20);
     pq.pop();
     QCOMPARE(pq.top().priority, 10);
+    
+    qInfo() << "✓ 测试用例: testCustomComparator - 通过";
+    qInfo() << "========================================\n";
 }
 
 void TestPriorityQueue::testEmpty()
 {
+    qInfo() << "\n========================================";
+    qInfo() << "测试用例: testEmpty - 开始";
+    qInfo() << "========================================";
+    
     PriorityQueue<int> pq;
     QVERIFY(pq.empty());
     QVERIFY_EXCEPTION_THROWN(pq.top(), std::out_of_range);
@@ -101,6 +126,9 @@ void TestPriorityQueue::testEmpty()
     pq.push(1);
     pq.pop();
     QVERIFY(pq.empty());
+    
+    qInfo() << "✓ 测试用例: testEmpty - 通过";
+    qInfo() << "========================================\n";
 }
 
 QTEST_APPLESS_MAIN(TestPriorityQueue)

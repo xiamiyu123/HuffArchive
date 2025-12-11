@@ -37,9 +37,14 @@ private slots:
 
     // 测试：单个文本文件压缩
     void testCompressSingleTextFile() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testCompressSingleTextFile - 开始";
+        qInfo() << "========================================";
+        
         // 创建测试文件
         fs::path testFile = m_sourceDir / "test.txt";
         std::string originalContent = "Hello, World! This is a test file for Huffman compression.";
+        qInfo() << "创建测试文件:" << testFile.string().c_str();
         
         {
             std::ofstream ofs(testFile, std::ios::binary);
@@ -52,6 +57,7 @@ private slots:
 
         // 执行压缩
         fs::path outputFile = m_outputDir / "test.huff";
+        qInfo() << "执行压缩命令，输出文件:" << outputFile.string().c_str();
         Command::CompressCommand compressCmd(&model, Structure::String(outputFile.string().c_str()));
         compressCmd.execute();
 
@@ -66,15 +72,23 @@ private slots:
             ifs.read(magic, 4);
         }
         QCOMPARE(std::string(magic), std::string("HUFF"));
+        
+        qInfo() << "✓ 测试用例: testCompressSingleTextFile - 通过";
+        qInfo() << "========================================\n";
     }
 
     // 测试：压缩后解压验证
     void testCompressDecompress() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testCompressDecompress - 开始";
+        qInfo() << "========================================";
+        
         // 创建测试文件
         fs::path testFile = m_sourceDir / "compress_decompress.txt";
         std::string originalContent = "The quick brown fox jumps over the lazy dog. " 
                                      "Pack my box with five dozen liquor jugs. " 
                                      "AAAAAABBBBBBCCCCCCDDDDDD";
+        qInfo() << "创建测试文件:" << testFile.string().c_str();
         
         {
             std::ofstream ofs(testFile, std::ios::binary);
@@ -82,17 +96,20 @@ private slots:
         }
 
         // 第一步：压缩
+        qInfo() << "步骤 1: 执行压缩";
         Model::DataModel compressModel;
         compressModel.addFile(Model::FileRecord(testFile.string().c_str()));
 
         fs::path compressedFile = m_outputDir / "test_compress_decompress.huff";
         Command::CompressCommand compressCmd(&compressModel, Structure::String(compressedFile.string().c_str()));
         compressCmd.execute();
+        qInfo() << "压缩完成:" << compressedFile.string().c_str();
 
         // 验证压缩文件存在
         QVERIFY(fs::exists(compressedFile));
 
         // 第二步：解压
+        qInfo() << "步骤 2: 执行解压";
         Model::DataModel decompressModel;
         fs::path decompressDir = m_outputDir / "decompressed";
         fs::create_directories(decompressDir);
@@ -111,16 +128,25 @@ private slots:
         QCOMPARE((int)decompressedContent.size(), (int)originalContent.size());
 
         // 验证内容一致
+        qInfo() << "验证解压后内容与原始内容一致";
         for (int i = 0; i < (int)originalContent.size(); ++i) {
             QCOMPARE(decompressedContent[i], (unsigned char)originalContent[i]);
         }
+        
+        qInfo() << "✓ 测试用例: testCompressDecompress - 通过";
+        qInfo() << "========================================\n";
     }
 
     // 测试：多个文件压缩
     void testCompressMultipleFiles() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testCompressMultipleFiles - 开始";
+        qInfo() << "========================================";
+        
         // 创建多个测试文件
         Structure::ArrayList<fs::path> testFiles;
         Structure::ArrayList<std::string> contents;
+        qInfo() << "创建 3 个测试文件";
 
         std::string file1 = "File 1: AAAAAABBBBBBCCCCCC";
         std::string file2 = "File 2: The quick brown fox";
@@ -177,12 +203,21 @@ private slots:
 
         QCOMPARE(std::string(magic), std::string("HUFF"));
         QCOMPARE(fileCount, 3);
+        
+        qInfo() << "✓ 测试用例: testCompressMultipleFiles - 通过";
+        qInfo() << "压缩文件数量:" << fileCount;
+        qInfo() << "========================================\n";
     }
 
     // 测试：二进制文件压缩
     void testCompressBinaryFile() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testCompressBinaryFile - 开始";
+        qInfo() << "========================================";
+        
         // 创建二进制测试文件
         fs::path testFile = m_sourceDir / "binary.bin";
+        qInfo() << "创建二进制测试文件:" << testFile.string().c_str();
         unsigned char binaryData[] = {0x00, 0xFF, 0x01, 0xFE, 0xAA, 0x55, 0xFF, 0x00,
                                       0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
         
@@ -211,13 +246,21 @@ private slots:
             ifs.read(magic, 4);
         }
         QCOMPARE(std::string(magic), std::string("HUFF"));
+        
+        qInfo() << "✓ 测试用例: testCompressBinaryFile - 通过";
+        qInfo() << "========================================\n";
     }
 
     // 测试：单字符文件压缩解压
     void testCompressDecompressSingleChar() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testCompressDecompressSingleChar - 开始";
+        qInfo() << "========================================";
+        
         // 创建包含单一字符的文件
         fs::path testFile = m_sourceDir / "single_char.txt";
         std::string content = "AAAAAAAAAA";  // 10个 A
+        qInfo() << "创建单字符测试文件:" << testFile.string().c_str();
         
         {
             std::ofstream ofs(testFile, std::ios::binary);
@@ -249,16 +292,25 @@ private slots:
         auto decompressedContent = IO::FileHandler::readBinary(Structure::String(decompressedFile.string().c_str()));
         QCOMPARE((int)decompressedContent.size(), 10);
         
+        qInfo() << "验证解压内容";
         for (int i = 0; i < 10; ++i) {
             QCOMPARE(decompressedContent[i], (unsigned char)'A');
         }
+        
+        qInfo() << "✓ 测试用例: testCompressDecompressSingleChar - 通过";
+        qInfo() << "========================================\n";
     }
 
     // 测试：大文件压缩（生成较大的数据）
     void testCompressLargeFile() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testCompressLargeFile - 开始";
+        qInfo() << "========================================";
+        
         // 创建较大的测试文件（1MB）
         fs::path testFile = m_sourceDir / "large.txt";
         const int fileSize = 1024 * 1024;  // 1MB
+        qInfo() << "创建大文件测试 (1MB):" << testFile.string().c_str();
         
         {
             std::ofstream ofs(testFile, std::ios::binary);
@@ -288,16 +340,24 @@ private slots:
         // 重复数据应该能压缩
         QVERIFY(compressedSize < originalSize);
         
-        qDebug() << "Original size:" << originalSize << "bytes";
-        qDebug() << "Compressed size:" << compressedSize << "bytes";
-        qDebug() << "Compression ratio:" << (100.0 * compressedSize / originalSize) << "%";
+        qInfo() << "原始大小:" << originalSize << "字节";
+        qInfo() << "压缩大小:" << compressedSize << "字节";
+        qInfo() << "压缩率:" << (100.0 * compressedSize / originalSize) << "%";
+        
+        qInfo() << "✓ 测试用例: testCompressLargeFile - 通过";
+        qInfo() << "========================================\n";
     }
 
     // 测试：解压后文件数量和大小验证
     void testDecompressFileMetadata() {
+        qInfo() << "\n========================================";
+        qInfo() << "测试用例: testDecompressFileMetadata - 开始";
+        qInfo() << "========================================";
+        
         // 创建多个测试文件
         fs::path f1 = m_sourceDir / "meta1.txt";
         fs::path f2 = m_sourceDir / "meta2.txt";
+        qInfo() << "创建 2 个测试文件";
         
         std::string content1 = "Content of file 1";
         std::string content2 = "Different content for file 2";
@@ -340,6 +400,10 @@ private slots:
         fs::path decompF2 = decompressDir / "meta2.txt";
         QVERIFY(fs::exists(decompF1));
         QVERIFY(fs::exists(decompF2));
+        
+        qInfo() << "✓ 测试用例: testDecompressFileMetadata - 通过";
+        qInfo() << "文件数量:" << decompressModel.getFileCount();
+        qInfo() << "========================================\n";
     }
 
 private:
