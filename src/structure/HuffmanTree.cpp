@@ -1,5 +1,6 @@
 #include "structure/HuffmanTree.h"
 #include <algorithm>
+#include <utility>
 #include <limits>
 #include <iostream>
 #include <stdexcept>
@@ -34,6 +35,19 @@ void HuffmanTree::build(const HashMap<unsigned char, int>& frequencyMap) {
         m_nodes[i].lchild = -1;
         m_nodes[i].rchild = -1;
         i++;
+    }
+
+    // Sort leaf nodes by data to ensure deterministic tree construction
+    // This is crucial because HashMap iteration order might vary, leading to different
+    // tree structures if we don't enforce a deterministic order for leaves.
+    if (n > 0) {
+        for (int j = 0; j < n - 1; ++j) {
+            for (int k = 0; k < n - j - 1; ++k) {
+                if (m_nodes[k].data > m_nodes[k + 1].data) {
+                    std::swap(m_nodes[k], m_nodes[k + 1]);
+                }
+            }
+        }
     }
 
     // 初始化非叶子节点（其实 resize 默认构造已经做了，但为了保险喵）
