@@ -102,6 +102,18 @@ namespace Structure {
             m_size++;
         }
 
+        bool contains(const K& key) const {
+            int index = hash(key);
+            Entry* current = m_buckets[index];
+            while (current) {
+                if (current->first == key) {
+                    return true;
+                }
+                current = current->next;
+            }
+            return false;
+        }
+
         V& operator[](const K& key) {
             int index = hash(key);
             Entry* current = m_buckets[index];

@@ -65,6 +65,7 @@ void BitStream::loadBytes(const Structure::ArrayList<unsigned char>& data) {
     m_bitCount = 0;    // 也不用这个
 }
 
+
 int BitStream::readBit() {
     if (m_readByteIndex >= m_buffer.size()) {
         return -1; // 读完了

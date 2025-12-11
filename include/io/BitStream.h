@@ -26,7 +26,8 @@ public:
     // 从字节数组加载数据用于读取
     void loadBytes(const Structure::ArrayList<unsigned char>& data);
 
-    // 读取一个位（返回 0 或 1，如果读完返回 -1）
+    //读取当前位流中的下一个比特位，并返回其值（0 或 1）；
+    //如果已读到缓冲区末尾，则返回 -1。该函数会自动管理字节和位的读取索引。
     int readBit();
 
     // 清空缓冲区

@@ -88,16 +88,16 @@ void FileRecord::setRelativePath(const Structure::String& path) {
     m_relativePath = path;
 }
 
+void FileRecord::setOriginalSize(long long size) {
+    m_originalSize = size;
+}
+
 void FileRecord::setCompressedSize(long long size) {
     m_compressedSize = size;
 }
 
 void FileRecord::setOffset(long long offset) {
     m_offset = offset;
-}
-
-void FileRecord::setStatus(FileStatus status) {ze) {
-    m_compressedSize = size;
 }
 
 void FileRecord::setStatus(FileStatus status) {

@@ -5,6 +5,7 @@
 #include "HashMap.h"
 #include "PriorityQueue.h"
 #include "String.h"
+#include <functional>
 
 namespace Structure {
 
@@ -23,9 +24,14 @@ public:
     String encode(const ArrayList<unsigned char>& data);
     String encode(const unsigned char* data, int length);
 
-    // 译码：将 01 字符串转换回原始字节流
-    // 返回解码后的字节数组
+    // [旧接口] 译码：将 01 字符串转换回原始字节流
     ArrayList<unsigned char> decode(const String& binaryString);
+
+    // [新接口] 流式译码
+    // readBit: 回调函数指针，返回下一个位 (0/1)，结束返回 -1
+    // writeByte: 回调函数指针，输出解码出的一个字节
+    // targetSize: 目标原始字节数 (用于解决 Padding 问题)
+    void decode(std::function<int()> readBit, std::function<void(unsigned char)> writeByte, long long targetSize);
 
     // 获取根节点索引
     int getRootIndex() const;

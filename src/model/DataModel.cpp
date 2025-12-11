@@ -14,7 +14,7 @@ void DataModel::addFile(const FileRecord& file) {
 }
 
 void DataModel::removeFile(int index) {
-    m_files.removeAt(index);
+    m_files.remove(index);
 }
 
 void DataModel::clear() {
