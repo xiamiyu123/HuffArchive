@@ -100,4 +100,4 @@ void TestIO::testFileHandlerBinary()
 }
 
 QTEST_MAIN(TestIO)
-#include "tst_io.moc"
+#include "test_io.moc"

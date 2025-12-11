@@ -62,3 +62,19 @@ inline char* toString(const String& str) {
 }
 
 }
+
+// 特化 std::hash 以支持 Structure::String
+namespace std {
+    template <>
+    struct hash<Structure::String> {
+        size_t operator()(const Structure::String& str) const {
+            // 使用 DJB2 哈希算法
+            size_t hash = 5381;
+            for (const char* c = str.c_str(); *c != '\0'; ++c) {
+                hash = ((hash << 5) + hash) + static_cast<unsigned char>(*c);
+            }
+            return hash;
+        }
+    };
+}
+
