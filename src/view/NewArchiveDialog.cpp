@@ -1,4 +1,5 @@
 #include "view/NewArchiveDialog.h"
+#include "command/CompressMultipleSourcesCommand.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStandardPaths>
@@ -331,8 +332,24 @@ void NewArchiveDialog::onStart() {
         return;
     }
     
-    // 接受对话框
-    accept();
+    // 使用高阶命令执行压缩
+    Structure::String outputPath = Structure::String(m_archivePathEdit->text().toStdString().c_str());
+    
+    // 创建命令对象（它会自动处理：文件收集、目录展开、相对路径计算）
+    Command::CompressMultipleSourcesCommand compressCmd(m_selectedFiles, outputPath);
+    
+    // 执行压缩
+    bool success = compressCmd.execute();
+    
+    if (success) {
+        QMessageBox::information(this, "成功", "压缩完成！");
+        accept();
+    } else {
+        // 获取错误信息
+        Structure::String errorMsg = compressCmd.getErrorMessage();
+        QMessageBox::critical(this, "错误", 
+            QString("压缩失败：%1").arg(errorMsg.c_str()));
+    }
 }
 
 void NewArchiveDialog::onCancel() {
