@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <iostream>
 #include "structure/PriorityQueue.h"
 
 using namespace Structure;
@@ -16,9 +17,9 @@ private slots:
 
 void TestPriorityQueue::testMinHeap()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testMinHeap - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testMinHeap - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     // Default is min heap (std::less)
     PriorityQueue<int> pq;
@@ -38,15 +39,15 @@ void TestPriorityQueue::testMinHeap()
     pq.pop();
     QVERIFY(pq.empty());
     
-    qInfo() << "✓ 测试用例: testMinHeap - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testMinHeap - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestPriorityQueue::testMaxHeap()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testMaxHeap - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testMaxHeap - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     // Use std::greater for max heap
     PriorityQueue<int, std::greater<int>> pq;
@@ -62,8 +63,8 @@ void TestPriorityQueue::testMaxHeap()
     pq.pop();
     QCOMPARE(pq.top(), 10);
     
-    qInfo() << "✓ 测试用例: testMaxHeap - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testMaxHeap - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 struct CustomStruct {
@@ -94,9 +95,9 @@ struct CustomComparator {
 
 void TestPriorityQueue::testCustomComparator()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testCustomComparator - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testCustomComparator - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     PriorityQueue<CustomStruct, CustomComparator> pq;
     pq.push({1, 10});
@@ -109,15 +110,15 @@ void TestPriorityQueue::testCustomComparator()
     pq.pop();
     QCOMPARE(pq.top().priority, 10);
     
-    qInfo() << "✓ 测试用例: testCustomComparator - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testCustomComparator - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestPriorityQueue::testEmpty()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testEmpty - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testEmpty - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     PriorityQueue<int> pq;
     QVERIFY(pq.empty());
@@ -127,8 +128,8 @@ void TestPriorityQueue::testEmpty()
     pq.pop();
     QVERIFY(pq.empty());
     
-    qInfo() << "✓ 测试用例: testEmpty - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testEmpty - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 QTEST_APPLESS_MAIN(TestPriorityQueue)

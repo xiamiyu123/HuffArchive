@@ -4,6 +4,7 @@
  */
 
 #include <QtTest>
+#include <iostream>
 #include "structure/String.h"
 #include "structure/ArrayList.h"
 #include "structure/HashMap.h"
@@ -38,9 +39,9 @@ private slots:
 
 void TestEdgeCases::testStringEmpty()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testStringEmpty - 空字符串操作";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testStringEmpty - 空字符串操作" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     String s1;
     String s2("");
@@ -53,29 +54,29 @@ void TestEdgeCases::testStringEmpty()
     // 空字符串相等
     QVERIFY(s1 == s2);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestEdgeCases::testStringFindInEmpty()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testStringFindInEmpty - 在空字符串中查找";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testStringFindInEmpty - 在空字符串中查找" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     String s;
     QCOMPARE(s.find('a'), -1);
     QCOMPARE(s.find('z'), -1);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestEdgeCases::testStringSubstrEdges()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testStringSubstrEdges - substr 边界情况";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testStringSubstrEdges - substr 边界情况" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     String s = "Hello";
     
@@ -95,15 +96,15 @@ void TestEdgeCases::testStringSubstrEdges()
     String sub4 = s.substr(2, -1);
     QCOMPARE(strcmp(sub4.c_str(), "llo"), 0);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestEdgeCases::testStringConcatenationEmpty()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testStringConcatenationEmpty - 空字符串连接";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testStringConcatenationEmpty - 空字符串连接" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     String s1 = "Hello";
     String s2;
@@ -124,17 +125,17 @@ void TestEdgeCases::testStringConcatenationEmpty()
     s1 += s2;
     QCOMPARE(strcmp(s1.c_str(), "Hello"), 0);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 // ====== ArrayList 测试 ======
 
 void TestEdgeCases::testArrayListResizeDown()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testArrayListResizeDown - ArrayList 缩小";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testArrayListResizeDown - ArrayList 缩小" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     ArrayList<int> list;
     list.add(1);
@@ -157,15 +158,15 @@ void TestEdgeCases::testArrayListResizeDown()
     QCOMPARE(list.size(), 0);
     QVERIFY(list.empty());
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestEdgeCases::testArrayListEmptyOperations()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testArrayListEmptyOperations - 空列表操作";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testArrayListEmptyOperations - 空列表操作" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     ArrayList<int> list;
     
@@ -182,17 +183,17 @@ void TestEdgeCases::testArrayListEmptyOperations()
     list.clear();
     QVERIFY(list.empty());
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 // ====== HashMap 测试 ======
 
 void TestEdgeCases::testHashMapCollisions()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testHashMapCollisions - 哈希冲突处理";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testHashMapCollisions - 哈希冲突处理" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     // 创建小容量 HashMap 以增加冲突概率
     HashMap<int, int> map(4);
@@ -210,15 +211,15 @@ void TestEdgeCases::testHashMapCollisions()
     
     QCOMPARE(map.size(), 20);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestEdgeCases::testHashMapRehash()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testHashMapRehash - 自动扩容";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testHashMapRehash - 自动扩容" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     HashMap<int, int> map(8);
     
@@ -236,17 +237,17 @@ void TestEdgeCases::testHashMapRehash()
     
     QCOMPARE(map.size(), 100);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 // ====== PriorityQueue 测试 ======
 
 void TestEdgeCases::testPriorityQueueSameWeight()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testPriorityQueueSameWeight - 相同权重元素";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testPriorityQueueSameWeight - 相同权重元素" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     PriorityQueue<int> pq;
     
@@ -274,8 +275,8 @@ void TestEdgeCases::testPriorityQueueSameWeight()
     // 最后是 7
     QCOMPARE(pq.top(), 7);
     
-    qInfo() << "✓ 测试通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 QTEST_APPLESS_MAIN(TestEdgeCases)

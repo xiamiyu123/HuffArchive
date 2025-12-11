@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <iostream>
 #include <QString>
 #include <QTemporaryFile>
 #include <QTemporaryDir>
@@ -18,14 +19,14 @@ private slots:
 
 void TestIO::testBitStream()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testBitStream - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testBitStream - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     IO::BitStream bs;
     
     // Test 1: Write bits manually
-    qInfo() << "测试 1: 手动写入位";
+    std::cout << "测试 1: 手动写入位" << std::endl;
     bs.writeBit(1);
     bs.writeBit(0);
     bs.writeBit(1);
@@ -44,7 +45,7 @@ void TestIO::testBitStream()
     QCOMPARE(static_cast<int>(bytes[0]), 0xB9);
     
     // Test 2: Write bits from string
-    qInfo() << "测试 2: 从字符串写入位";
+    std::cout << "测试 2: 从字符串写入位" << std::endl;
     bs.clear();
     bs.writeBits("11110000"); // 0xF0
     bytes = bs.getBytes();
@@ -52,7 +53,7 @@ void TestIO::testBitStream()
     QCOMPARE(static_cast<int>(bytes[0]), 0xF0);
     
     // Test 3: Read bits
-    qInfo() << "测试 3: 读取位";
+    std::cout << "测试 3: 读取位" << std::endl;
     bs.loadBytes(bytes);
     QCOMPARE(bs.readBit(), 1);
     QCOMPARE(bs.readBit(), 1);
@@ -64,15 +65,15 @@ void TestIO::testBitStream()
     QCOMPARE(bs.readBit(), 0);
     QCOMPARE(bs.readBit(), -1); // EOF
     
-    qInfo() << "✓ 测试用例: testBitStream - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testBitStream - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestIO::testFileHandlerText()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testFileHandlerText - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testFileHandlerText - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     QTemporaryFile file;
     if (file.open()) {
@@ -84,20 +85,20 @@ void TestIO::testFileHandlerText()
         QVERIFY(success);
         
         // Read
-        qInfo() << "读取文本文件";
+        std::cout << "读取文本文件" << std::endl;
         Structure::String readContent = IO::FileHandler::readText(path);
         QCOMPARE(readContent, content);
         
-        qInfo() << "✓ 测试用例: testFileHandlerText - 通过";
+        std::cout << "✓ 测试用例: testFileHandlerText - 通过" << std::endl;
     }
-    qInfo() << "========================================\n";
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestIO::testFileHandlerBinary()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testFileHandlerBinary - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testFileHandlerBinary - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     QTemporaryFile file;
     if (file.open()) {
@@ -113,16 +114,16 @@ void TestIO::testFileHandlerBinary()
         QVERIFY(success);
         
         // Read
-        qInfo() << "读取二进制文件";
+        std::cout << "读取二进制文件" << std::endl;
         auto readData = IO::FileHandler::readBinary(path);
         QCOMPARE(readData.size(), data.size());
         for (int i = 0; i < data.size(); ++i) {
             QCOMPARE(readData[i], data[i]);
         }
         
-        qInfo() << "✓ 测试用例: testFileHandlerBinary - 通过";
+        std::cout << "✓ 测试用例: testFileHandlerBinary - 通过" << std::endl;
     }
-    qInfo() << "========================================\n";
+    std::cout << "========================================\n" << std::endl;
 }
 
 QTEST_MAIN(TestIO)

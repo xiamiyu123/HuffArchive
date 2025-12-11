@@ -1,6 +1,7 @@
 #include <QtTest>
 #include "structure/String.h"
 #include <sstream>
+#include <iostream>
 
 using namespace Structure;
 
@@ -20,9 +21,9 @@ private slots:
 
 void TestString::testConstruction()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testConstruction - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testConstruction - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     String s1;
     QVERIFY(s1.empty());
@@ -36,15 +37,15 @@ void TestString::testConstruction()
     QCOMPARE(s3.length(), 5);
     QCOMPARE(strcmp(s3.c_str(), "Hello"), 0);
     
-    qInfo() << "✓ 测试用例: testConstruction - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testConstruction - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestString::testAssignment()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testAssignment - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testAssignment - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     String s1 = "Hello";
     String s2;
@@ -55,15 +56,15 @@ void TestString::testAssignment()
     s2 = "World";
     QCOMPARE(strcmp(s2.c_str(), "World"), 0);
     
-    qInfo() << "✓ 测试用例: testAssignment - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testAssignment - 通过";
+    std::cout << "========================================\n";
 }
 
 void TestString::testConcatenation()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testConcatenation - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================";
+    std::cout << "测试用例: testConcatenation - 开始";
+    std::cout << "========================================";
     
     String s1 = "Hello";
     String s2 = " World";
@@ -74,15 +75,15 @@ void TestString::testConcatenation()
     s1 += "!";
     QCOMPARE(strcmp(s1.c_str(), "Hello!"), 0);
     
-    qInfo() << "✓ 测试用例: testConcatenation - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testConcatenation - 通过";
+    std::cout << "========================================\n";
 }
 
 void TestString::testComparison()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testComparison - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================";
+    std::cout << "测试用例: testComparison - 开始";
+    std::cout << "========================================";
     
     String s1 = "Apple";
     String s2 = "Banana";
@@ -93,15 +94,15 @@ void TestString::testComparison()
     QVERIFY(s1 < s2);
     QVERIFY(s1 == "Apple");
     
-    qInfo() << "✓ 测试用例: testComparison - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testComparison - 通过";
+    std::cout << "========================================\n";
 }
 
 void TestString::testAccess()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testAccess - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================";
+    std::cout << "测试用例: testAccess - 开始";
+    std::cout << "========================================";
     
     String s = "Hello";
     QCOMPARE(s[0], 'H');
@@ -110,15 +111,15 @@ void TestString::testAccess()
     s[0] = 'h';
     QCOMPARE(s[0], 'h');
     
-    qInfo() << "✓ 测试用例: testAccess - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testAccess - 通过";
+    std::cout << "========================================\n";
 }
 
 void TestString::testSubstr()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testSubstr - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================";
+    std::cout << "测试用例: testSubstr - 开始";
+    std::cout << "========================================";
     
     String s = "Hello World";
     String sub = s.substr(6, 5);
@@ -127,24 +128,25 @@ void TestString::testSubstr()
     String sub2 = s.substr(0, 5);
     QCOMPARE(strcmp(sub2.c_str(), "Hello"), 0);
     
-    qInfo() << "✓ 测试用例: testSubstr - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testSubstr - 通过";
+    std::cout << "========================================\n";
 }
 
 void TestString::testFind()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testFind - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================";
+    std::cout << "测试用例: testFind - 开始";
+    std::cout << "========================================";
     
     String s = "Hello World";
     QCOMPARE(s.find('W'), 6);
     QCOMPARE(s.find('l'), 2);
     QCOMPARE(s.find('z'), -1);
     
-    qInfo() << "✓ 测试用例: testFind - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testFind - 通过";
+    std::cout << "========================================\n";
 }
 
 QTEST_APPLESS_MAIN(TestString)
 #include "test_string.moc"
+

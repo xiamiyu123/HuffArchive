@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <iostream>
 #include "structure/HashMap.h"
 #include "structure/String.h"
 
@@ -18,9 +19,9 @@ private slots:
 
 void TestHashMap::testPutAndGet()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testPutAndGet - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testPutAndGet - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     HashMap<int, int> map;
     map.put(1, 100);
@@ -30,15 +31,15 @@ void TestHashMap::testPutAndGet()
     QCOMPARE(map[2], 200);
     QCOMPARE(map.size(), 2);
     
-    qInfo() << "✓ 测试用例: testPutAndGet - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testPutAndGet - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestHashMap::testContains()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testContains - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testContains - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     HashMap<int, int> map;
     map.put(1, 10);
@@ -46,15 +47,15 @@ void TestHashMap::testContains()
     QVERIFY(map.contains(1));
     QVERIFY(!map.contains(2));
     
-    qInfo() << "✓ 测试用例: testContains - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testContains - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestHashMap::testUpdate()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testUpdate - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testUpdate - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     HashMap<int, int> map;
     map.put(1, 10);
@@ -63,15 +64,15 @@ void TestHashMap::testUpdate()
     QCOMPARE(map[1], 20);
     QCOMPARE(map.size(), 1);
     
-    qInfo() << "✓ 测试用例: testUpdate - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testUpdate - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestHashMap::testIterator()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testIterator - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testIterator - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     HashMap<int, int> map;
     map.put(1, 10);
@@ -92,15 +93,15 @@ void TestHashMap::testIterator()
     QCOMPARE(sumKeys, 6);
     QCOMPARE(sumValues, 60);
     
-    qInfo() << "✓ 测试用例: testIterator - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testIterator - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 void TestHashMap::testStringKey()
 {
-    qInfo() << "\n========================================";
-    qInfo() << "测试用例: testStringKey - 开始";
-    qInfo() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "测试用例: testStringKey - 开始" << std::endl;
+    std::cout << "========================================" << std::endl;
     
     HashMap<String, int> map;
     map.put("one", 1);
@@ -110,8 +111,8 @@ void TestHashMap::testStringKey()
     QCOMPARE(map["two"], 2);
     QVERIFY(map.contains("one"));
     
-    qInfo() << "✓ 测试用例: testStringKey - 通过";
-    qInfo() << "========================================\n";
+    std::cout << "✓ 测试用例: testStringKey - 通过" << std::endl;
+    std::cout << "========================================\n" << std::endl;
 }
 
 QTEST_APPLESS_MAIN(TestHashMap)
