@@ -456,6 +456,196 @@ private slots:
         std::cout << "========================================\n" << std::endl;
     }
 
+    // 测试：多文件夹结构压缩与完整性验证
+    void testMultiFolderCompressAndVerify() {
+        std::cout << "\n========================================" << std::endl;
+        std::cout << "测试用例: testMultiFolderCompressAndVerify - 开始" << std::endl;
+        std::cout << "========================================" << std::endl;
+        
+        // 创建复杂的文件夹结构
+        fs::path folder1 = m_sourceDir / "folder1";
+        fs::path folder2 = m_sourceDir / "folder2";
+        fs::path subfolder = folder1 / "subfolder";
+        
+        fs::create_directories(folder1);
+        fs::create_directories(folder2);
+        fs::create_directories(subfolder);
+        
+        // 创建不同类型的测试文件
+        std::cout << "创建多文件夹结构的测试文件" << std::endl;
+        
+        // folder1/file1.txt
+        fs::path f1 = folder1 / "file1.txt";
+        std::string content1 = "This is file 1 in folder1. It contains some test data.";
+        {
+            std::ofstream ofs(f1, std::ios::binary);
+            ofs.write(content1.c_str(), content1.size());
+        }
+        
+        // folder1/file2.txt
+        fs::path f2 = folder1 / "file2.txt";
+        std::string content2 = "File 2 content: AAABBBCCC123456789";
+        {
+            std::ofstream ofs(f2, std::ios::binary);
+            ofs.write(content2.c_str(), content2.size());
+        }
+        
+        // folder1/subfolder/nested.txt
+        fs::path f3 = subfolder / "nested.txt";
+        std::string content3 = "Nested file in subfolder with unique content!";
+        {
+            std::ofstream ofs(f3, std::ios::binary);
+            ofs.write(content3.c_str(), content3.size());
+        }
+        
+        // folder2/data.bin (二进制文件)
+        fs::path f4 = folder2 / "data.bin";
+        unsigned char binaryData[] = {0x00, 0xFF, 0xAA, 0x55, 0x12, 0x34, 0x56, 0x78};
+        {
+            std::ofstream ofs(f4, std::ios::binary);
+            ofs.write(reinterpret_cast<const char*>(binaryData), sizeof(binaryData));
+        }
+        
+        // folder2/readme.md
+        fs::path f5 = folder2 / "readme.md";
+        std::string content5 = "# README\n\nThis is a markdown file for testing.\n\n## Features\n- Feature 1\n- Feature 2";
+        {
+            std::ofstream ofs(f5, std::ios::binary);
+            ofs.write(content5.c_str(), content5.size());
+        }
+        
+        std::cout << "创建了 5 个文件，分布在 3 个不同的文件夹中" << std::endl;
+        
+        // 压缩所有文件
+        std::cout << "步骤 1: 压缩所有文件" << std::endl;
+        Model::DataModel compressModel;
+        
+        // 创建 FileRecord 并设置相对路径以保留目录结构
+        Model::FileRecord record1(f1.string().c_str());
+        record1.setRelativePath(Structure::String("folder1/file1.txt"));
+        compressModel.addFile(record1);
+        
+        Model::FileRecord record2(f2.string().c_str());
+        record2.setRelativePath(Structure::String("folder1/file2.txt"));
+        compressModel.addFile(record2);
+        
+        Model::FileRecord record3(f3.string().c_str());
+        record3.setRelativePath(Structure::String("folder1/subfolder/nested.txt"));
+        compressModel.addFile(record3);
+        
+        Model::FileRecord record4(f4.string().c_str());
+        record4.setRelativePath(Structure::String("folder2/data.bin"));
+        compressModel.addFile(record4);
+        
+        Model::FileRecord record5(f5.string().c_str());
+        record5.setRelativePath(Structure::String("folder2/readme.md"));
+        compressModel.addFile(record5);
+        
+        QCOMPARE(compressModel.getFileCount(), 5);
+        
+        fs::path compressedFile = m_outputDir / "multi_folder.huff";
+        Command::CompressCommand compressCmd(&compressModel, Structure::String(compressedFile.string().c_str()));
+        compressCmd.execute();
+        
+        QVERIFY(fs::exists(compressedFile));
+        std::cout << "压缩完成: " << compressedFile.string() << std::endl;
+        
+        // 计算压缩率
+        long long totalOriginalSize = 0;
+        totalOriginalSize += fs::file_size(f1);
+        totalOriginalSize += fs::file_size(f2);
+        totalOriginalSize += fs::file_size(f3);
+        totalOriginalSize += fs::file_size(f4);
+        totalOriginalSize += fs::file_size(f5);
+        long long compressedSize = fs::file_size(compressedFile);
+        
+        std::cout << "原始总大小: " << totalOriginalSize << " 字节" << std::endl;
+        std::cout << "压缩后大小: " << compressedSize << " 字节" << std::endl;
+        std::cout << "压缩率: " << (100.0 * compressedSize / totalOriginalSize) << "%" << std::endl;
+        
+        // 解压所有文件
+        std::cout << "\n步骤 2: 解压所有文件并验证完整性" << std::endl;
+        Model::DataModel decompressModel;
+        fs::path decompressDir = m_outputDir / "multi_folder_out";
+        fs::create_directories(decompressDir);
+        
+        Command::DecompressCommand decompressCmd(&decompressModel,
+                                                 Structure::String(compressedFile.string().c_str()),
+                                                 Structure::String(decompressDir.string().c_str()));
+        decompressCmd.execute();
+        
+        // 验证文件数量
+        QCOMPARE(decompressModel.getFileCount(), 5);
+        std::cout << "解压了 " << decompressModel.getFileCount() << " 个文件" << std::endl;
+        
+        // 验证每个文件的内容完整性
+        std::cout << "\n步骤 3: 验证每个文件的内容完整性" << std::endl;
+        
+        // 验证 file1.txt
+        std::cout << "验证 folder1/file1.txt" << std::endl;
+        fs::path decomp_f1 = decompressDir / "folder1" / "file1.txt";
+        QVERIFY(fs::exists(decomp_f1));
+        auto read1 = IO::FileHandler::readBinary(Structure::String(decomp_f1.string().c_str()));
+        QCOMPARE((int)read1.size(), (int)content1.size());
+        for (size_t i = 0; i < content1.size(); ++i) {
+            QCOMPARE(read1[i], (unsigned char)content1[i]);
+        }
+        
+        // 验证 file2.txt
+        std::cout << "验证 folder1/file2.txt" << std::endl;
+        fs::path decomp_f2 = decompressDir / "folder1" / "file2.txt";
+        QVERIFY(fs::exists(decomp_f2));
+        auto read2 = IO::FileHandler::readBinary(Structure::String(decomp_f2.string().c_str()));
+        QCOMPARE((int)read2.size(), (int)content2.size());
+        for (size_t i = 0; i < content2.size(); ++i) {
+            QCOMPARE(read2[i], (unsigned char)content2[i]);
+        }
+        
+        // 验证 nested.txt
+        std::cout << "验证 folder1/subfolder/nested.txt" << std::endl;
+        fs::path decomp_f3 = decompressDir / "folder1" / "subfolder" / "nested.txt";
+        QVERIFY(fs::exists(decomp_f3));
+        auto read3 = IO::FileHandler::readBinary(Structure::String(decomp_f3.string().c_str()));
+        QCOMPARE((int)read3.size(), (int)content3.size());
+        for (size_t i = 0; i < content3.size(); ++i) {
+            QCOMPARE(read3[i], (unsigned char)content3[i]);
+        }
+        
+        // 验证 data.bin (二进制文件)
+        std::cout << "验证 folder2/data.bin" << std::endl;
+        fs::path decomp_f4 = decompressDir / "folder2" / "data.bin";
+        QVERIFY(fs::exists(decomp_f4));
+        auto read4 = IO::FileHandler::readBinary(Structure::String(decomp_f4.string().c_str()));
+        QCOMPARE((int)read4.size(), (int)sizeof(binaryData));
+        for (size_t i = 0; i < sizeof(binaryData); ++i) {
+            QCOMPARE(read4[i], binaryData[i]);
+        }
+        
+        // 验证 readme.md
+        std::cout << "验证 folder2/readme.md" << std::endl;
+        fs::path decomp_f5 = decompressDir / "folder2" / "readme.md";
+        QVERIFY(fs::exists(decomp_f5));
+        auto read5 = IO::FileHandler::readBinary(Structure::String(decomp_f5.string().c_str()));
+        QCOMPARE((int)read5.size(), (int)content5.size());
+        for (size_t i = 0; i < content5.size(); ++i) {
+            QCOMPARE(read5[i], (unsigned char)content5[i]);
+        }
+        
+        // 验证文件夹结构完整性
+        std::cout << "\n步骤 4: 验证文件夹结构" << std::endl;
+        QVERIFY(fs::exists(decompressDir / "folder1"));
+        QVERIFY(fs::exists(decompressDir / "folder1" / "subfolder"));
+        QVERIFY(fs::exists(decompressDir / "folder2"));
+        QVERIFY(fs::is_directory(decompressDir / "folder1"));
+        QVERIFY(fs::is_directory(decompressDir / "folder1" / "subfolder"));
+        QVERIFY(fs::is_directory(decompressDir / "folder2"));
+        std::cout << "文件夹结构验证通过" << std::endl;
+        
+        std::cout << "\n✓ 测试用例: testMultiFolderCompressAndVerify - 通过" << std::endl;
+        std::cout << "所有文件内容和结构完整性验证通过！" << std::endl;
+        std::cout << "========================================\n" << std::endl;
+    }
+
 private:
     fs::path m_testDir;
     fs::path m_sourceDir;
