@@ -1,14 +1,20 @@
 #pragma once
+#include "model/DataModel.h"
+#include "structure/String.h"
 
 namespace Command {
 
 class CompressCommand {
 public:
-    CompressCommand();
+    CompressCommand(Model::DataModel* model, const Structure::String& outputPath);
     ~CompressCommand();
 
-    // TODO: Execute compression
+    // Execute compression
     void execute();
+
+private:
+    Model::DataModel* m_model;
+    Structure::String m_outputPath;
 };
 
 }
