@@ -9,8 +9,12 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
+#include <QFileDialog>
+#include <QStackedWidget>
 
 namespace View {
+
+class ArchiveView;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -23,14 +27,20 @@ private:
     void setupUI();
     void setupMenuBar();
     void setupConnections();
+    void showWelcomeScreen();
+    void showArchiveView(const QString& archivePath);
     
     // UI Components
+    QStackedWidget* m_stackedWidget;
+    QWidget* m_welcomeWidget;
     QWidget* m_centralWidget;
     QVBoxLayout* m_mainLayout;
     QHBoxLayout* m_buttonLayout;
     
     QPushButton* m_openButton;
     QPushButton* m_newButton;
+    
+    ArchiveView* m_archiveView;
     
     // Menu components
     QMenu* m_fileMenu;

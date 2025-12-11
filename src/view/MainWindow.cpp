@@ -1,17 +1,26 @@
 #include "view/MainWindow.h"
+#include "view/ArchiveView.h"
+#include "view/NewArchiveDialog.h"
+#include "command/CompressDirectoryCommand.h"
 #include <QIcon>
 #include <QFont>
 #include <QSize>
+#include <QMessageBox>
+#include <QFileInfo>
+#include <QProgressDialog>
 
 namespace View {
 
 MainWindow::MainWindow(QWidget *parent) 
     : QMainWindow(parent),
+      m_stackedWidget(nullptr),
+      m_welcomeWidget(nullptr),
       m_centralWidget(nullptr),
       m_mainLayout(nullptr),
       m_buttonLayout(nullptr),
       m_openButton(nullptr),
       m_newButton(nullptr),
+      m_archiveView(nullptr),
       m_fileMenu(nullptr),
       m_editMenu(nullptr),
       m_searchMenu(nullptr),
@@ -35,17 +44,31 @@ void MainWindow::setupUI() {
     setWindowTitle("哈夫曼压缩工具");
     setMinimumSize(800, 600);
     
-    // 创建中心部件
-    m_centralWidget = new QWidget(this);
-    setCentralWidget(m_centralWidget);
+    // 创建堆叠窗口部件（用于在欢迎界面和文件列表界面之间切换）
+    m_stackedWidget = new QStackedWidget(this);
+    setCentralWidget(m_stackedWidget);
     
-    // 创建主布局
-    m_mainLayout = new QVBoxLayout(m_centralWidget);
-    m_mainLayout->setContentsMargins(50, 50, 50, 50);
-    m_mainLayout->setSpacing(20);
+    // 创建欢迎界面
+    showWelcomeScreen();
+}
+
+void MainWindow::showWelcomeScreen() {
+    // 如果欢迎界面已存在，直接显示
+    if (m_welcomeWidget) {
+        m_stackedWidget->setCurrentWidget(m_welcomeWidget);
+        return;
+    }
+    
+    // 创建欢迎界面部件
+    m_welcomeWidget = new QWidget(this);
+    
+    // 创建主布局（用于整个欢迎界面）
+    QVBoxLayout* welcomeLayout = new QVBoxLayout(m_welcomeWidget);
+    welcomeLayout->setContentsMargins(50, 50, 50, 50);
+    welcomeLayout->setSpacing(20);
     
     // 添加顶部弹簧（垂直居中）
-    m_mainLayout->addStretch(1);
+    welcomeLayout->addStretch(1);
     
     // 创建按钮布局
     m_buttonLayout = new QHBoxLayout();
@@ -110,13 +133,34 @@ void MainWindow::setupUI() {
     m_buttonLayout->addStretch(1);
     
     // 添加按钮布局到主布局
-    m_mainLayout->addLayout(m_buttonLayout);
+    welcomeLayout->addLayout(m_buttonLayout);
     
     // 添加底部弹簧（垂直居中）
-    m_mainLayout->addStretch(1);
+    welcomeLayout->addStretch(1);
     
-    // 设置窗口背景色
-    setStyleSheet("QMainWindow { background-color: #1890FF; }");
+    // 设置欢迎界面背景色
+    m_welcomeWidget->setStyleSheet("QWidget { background-color: #1890FF; }");
+    
+    // 将欢迎界面添加到堆叠窗口
+    m_stackedWidget->addWidget(m_welcomeWidget);
+    m_stackedWidget->setCurrentWidget(m_welcomeWidget);
+}
+
+void MainWindow::showArchiveView(const QString& archivePath) {
+    // 如果已有 ArchiveView，先移除
+    if (m_archiveView) {
+        m_stackedWidget->removeWidget(m_archiveView);
+        delete m_archiveView;
+        m_archiveView = nullptr;
+    }
+    
+    // 创建新的 ArchiveView
+    m_archiveView = new ArchiveView(Structure::String(archivePath.toStdString().c_str()), this);
+    m_stackedWidget->addWidget(m_archiveView);
+    m_stackedWidget->setCurrentWidget(m_archiveView);
+    
+    // 更新窗口标题
+    setWindowTitle(QString("哈夫曼压缩工具 - %1").arg(QFileInfo(archivePath).fileName()));
 }
 
 void MainWindow::setupMenuBar() {
@@ -199,11 +243,49 @@ void MainWindow::setupConnections() {
 }
 
 void MainWindow::onOpenArchive() {
-    // TODO: 实现打开压缩文件功能
+    // 打开文件对话框
+    QString fileName = QFileDialog::getOpenFileName(
+        this,
+        "打开压缩文件",
+        QString(),
+        "HUFF 压缩文件 (*.huff);;所有文件 (*.*)"
+    );
+    
+    if (!fileName.isEmpty()) {
+        showArchiveView(fileName);
+    }
 }
 
 void MainWindow::onNewArchive() {
-    // TODO: 实现新建压缩文件功能
+    // 创建并显示新建压缩文件对话框
+    NewArchiveDialog dialog(this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        Structure::String archivePath = dialog.getArchivePath();
+        Structure::ArrayList<Structure::String> filesToCompress = dialog.getFilesToCompress();
+        
+        if (filesToCompress.empty()) {
+            QMessageBox::warning(this, "错误", "没有选择要压缩的文件");
+            return;
+        }
+        
+        // 创建进度对话框
+        QProgressDialog progressDialog("正在压缩文件...", "取消", 0, 0, this);
+        progressDialog.setWindowModality(Qt::WindowModal);
+        progressDialog.setMinimumDuration(0);
+        progressDialog.show();
+        
+        // TODO: 实际的压缩逻辑
+        // 这里需要实现将多个文件压缩到一个归档的功能
+        // 当前的 CompressDirectoryCommand 只支持目录压缩
+        
+        progressDialog.close();
+        
+        QMessageBox::information(this, "提示", 
+            QString("压缩功能待完善\n已选择 %1 个文件\n目标: %2")
+                .arg(filesToCompress.size())
+                .arg(QString::fromStdString(archivePath.c_str())));
+    }
 }
 
 }
