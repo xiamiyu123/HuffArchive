@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <limits>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
 namespace Structure {
 
@@ -192,11 +194,10 @@ void HuffmanTree::decode(std::function<int()> readBit, std::function<void(unsign
             current = m_nodes[current].rchild;
         }
 
-        // 检查是否跑飞了 (例如 n=1 时遇到 '1')
+        // 检查是否遇到无效路径（数据损坏）
         if (current == -1) {
-            // 错误恢复：重置到根节点，丢弃当前位
-            current = m_root;
-            continue;
+            // 数据损坏，抛出异常
+            throw std::runtime_error("Huffman decode error: invalid bit sequence at decoded count " + std::to_string(decodedCount));
         }
 
         // 如果到达叶子节点

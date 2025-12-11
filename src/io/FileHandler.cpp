@@ -5,7 +5,8 @@
 namespace IO {
 
 Structure::String FileHandler::readText(const Structure::String& path) {
-    std::ifstream file(path.c_str());
+    // 使用二进制模式打开以确保跨平台一致性
+    std::ifstream file(path.c_str(), std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << path << std::endl;
         return "";
@@ -19,10 +20,7 @@ Structure::String FileHandler::readText(const Structure::String& path) {
 
     char* buffer = new char[size + 1];
     file.read(buffer, size);
-    // 在文本模式下，读取的字符数可能小于文件大小（例如 Windows 下 \r\n -> \n）
-    // read() 如果读不满会设置 failbit，但我们需要的是实际读取的内容
-    std::streamsize readBytes = file.gcount();
-    buffer[readBytes] = '\0';
+    buffer[size] = '\0';
     
     Structure::String content(buffer);
     delete[] buffer;
@@ -31,7 +29,8 @@ Structure::String FileHandler::readText(const Structure::String& path) {
 }
 
 bool FileHandler::writeText(const Structure::String& path, const Structure::String& content) {
-    std::ofstream file(path.c_str());
+    // 使用二进制模式写入以确保与 readText 一致，避免换行符转换
+    std::ofstream file(path.c_str(), std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open file for writing: " << path << std::endl;
         return false;

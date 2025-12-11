@@ -112,9 +112,9 @@ const char& String::operator[](int index) const { return m_data[index]; }
 String String::operator+(const String& other) const {
     String result;
     result.reserve(m_length + other.m_length);
-    result.m_length = m_length + other.m_length;
     std::strcpy(result.m_data, m_data);
     std::strcat(result.m_data, other.m_data);
+    result.m_length = m_length + other.m_length;
     return result;
 }
 
@@ -137,9 +137,9 @@ String String::operator+(const char* other) const {
     String result;
     int otherLen = other ? std::strlen(other) : 0;
     result.reserve(m_length + otherLen);
-    result.m_length = m_length + otherLen;
     std::strcpy(result.m_data, m_data);
     if (other) std::strcat(result.m_data, other);
+    result.m_length = m_length + otherLen;
     return result;
 }
 

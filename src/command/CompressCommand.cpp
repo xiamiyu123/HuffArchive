@@ -105,8 +105,8 @@ void CompressCommand::execute() {
         
         // 写入文件
         if (bytes.size() > 0) {
-            // ArrayList 没有 data()，使用 &bytes[0]
-            outFile.write(reinterpret_cast<const char*>(&bytes[0]), bytes.size());
+            // 使用 data() 方法更安全
+            outFile.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         }
         
         // 记录压缩后大小
