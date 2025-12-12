@@ -18,8 +18,7 @@ DecompressDialog::~DecompressDialog() {
 
 void DecompressDialog::setupUI() {
     setWindowTitle("解压文件");
-    setMinimumSize(600, 350);
-    resize(600, 350);
+    setMinimumSize(800, 500);
     
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setSpacing(20);
@@ -64,6 +63,9 @@ void DecompressDialog::setupUI() {
         "QGroupBox { border: 1px solid #E0E0E0; border-radius: 4px; margin-top: 12px; padding-top: 24px; font-weight: bold; color: #666666; }"
         "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 5px; left: 10px; }"
     );
+    
+    // 自适应大小以显示所有内容
+    adjustSize();
 }
 
 void DecompressDialog::setupHeader() {
