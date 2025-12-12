@@ -23,6 +23,7 @@ public:
 private:
     QTableWidget* m_table;
     void setupUi();
+    QString formatCharacterDisplay(unsigned char ch) const;
 };
 
 }
