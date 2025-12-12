@@ -5,7 +5,7 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QToolBar>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
 #include <QHeaderView>
@@ -32,29 +32,22 @@ private:
     
     // UI Components
     QVBoxLayout* m_mainLayout;
-    QToolBar* m_toolBar;
+    QWidget* m_topPanel;      // Replaces QToolBar for custom styling
+    QLineEdit* m_pathEdit;    // Address bar
     QTreeWidget* m_fileList;
     QLabel* m_statusLabel;
     
     // Toolbar actions
-    QPushButton* m_openBtn;
     QPushButton* m_extractBtn;
-    QPushButton* m_newFolderBtn;
     QPushButton* m_addBtn;
     QPushButton* m_deleteBtn;
-    QPushButton* m_testBtn;
-    QPushButton* m_propertiesBtn;
-    QPushButton* m_helpBtn;
+    QPushButton* m_infoBtn;   // Replaces properties/test/help for cleaner UI
 
 private slots:
-    void onOpen();
     void onExtract();
-    void onNewFolder();
     void onAdd();
     void onDelete();
-    void onTest();
-    void onProperties();
-    void onHelp();
+    void onInfo();
 };
 
 }

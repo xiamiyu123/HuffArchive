@@ -1,4 +1,5 @@
 #include "view/ArchiveView.h"
+#include "view/DecompressDialog.h"
 #include "command/DecompressDirectoryCommand.h"
 #include <QIcon>
 #include <QFileInfo>
@@ -6,16 +7,16 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <QHeaderView>
+#include <QMessageBox>
+#include <QDesktopServices>
+#include <QUrl>
 
 namespace View {
 
 ArchiveView::ArchiveView(const Structure::String& archivePath, QWidget *parent)
     : QWidget(parent),
-      m_archivePath(archivePath),
-      m_mainLayout(nullptr),
-      m_toolBar(nullptr),
-      m_fileList(nullptr),
-      m_statusLabel(nullptr)
+      m_archivePath(archivePath)
 {
     setupUI();
     setupConnections();
@@ -26,145 +27,139 @@ ArchiveView::~ArchiveView() {
 }
 
 void ArchiveView::setupUI() {
-    // 创建主布局
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    // 设置工具栏
     setupToolBar();
-    
-    // 设置文件列表
     setupFileList();
     
-    // 创建状态栏
+    // Status Bar
     m_statusLabel = new QLabel(this);
-    m_statusLabel->setStyleSheet(
-        "QLabel {"
-        "   padding: 4px 8px;"
-        "   background-color: #F5F5F5;"
-        "   border-top: 1px solid #E0E0E0;"
+    m_statusLabel->setStyleSheet("padding: 8px; background: #F3F3F3; color: #666666; border-top: 1px solid #E0E0E0;");
+    m_mainLayout->addWidget(m_statusLabel);
+    
+    // Global Styles
+    setStyleSheet(
+        "QWidget { background-color: #FFFFFF; }"
+        "QTreeWidget { border: none; }"
+        "QHeaderView::section { "
+        "   background-color: #FAFAFA; "
+        "   border: none; "
+        "   border-bottom: 1px solid #E0E0E0; "
+        "   border-right: 1px solid #F0F0F0; "
+        "   padding: 6px; "
+        "   font-weight: bold; "
+        "   color: #666666; "
         "}"
     );
-    m_mainLayout->addWidget(m_statusLabel);
 }
 
 void ArchiveView::setupToolBar() {
-    m_toolBar = new QToolBar(this);
-    m_toolBar->setMovable(false);
-    m_toolBar->setIconSize(QSize(32, 32));
-    m_toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+    m_topPanel = new QWidget(this);
+    m_topPanel->setStyleSheet("background-color: #F9F9F9; border-bottom: 1px solid #E0E0E0;");
     
-    m_toolBar->setStyleSheet(
-        "QToolBar {"
-        "   background-color: #F8F8F8;"
-        "   border-bottom: 1px solid #E0E0E0;"
-        "   spacing: 2px;"
-        "   padding: 4px;"
-        "}"
-        "QToolButton {"
-        "   background-color: transparent;"
-        "   border: 1px solid transparent;"
-        "   border-radius: 4px;"
-        "   padding: 4px;"
-        "   margin: 2px;"
-        "}"
-        "QToolButton:hover {"
-        "   background-color: #E3F2FD;"
-        "   border-color: #90CAF9;"
-        "}"
-        "QToolButton:pressed {"
-        "   background-color: #BBDEFB;"
+    QVBoxLayout* panelLayout = new QVBoxLayout(m_topPanel);
+    panelLayout->setSpacing(10);
+    panelLayout->setContentsMargins(10, 10, 10, 10);
+    
+    // 1. Action Buttons Row
+    QHBoxLayout* btnLayout = new QHBoxLayout();
+    btnLayout->setSpacing(8);
+    
+    auto createBtn = [this](const QString& text, const QString& iconName, const QString& objName = "") -> QPushButton* {
+        QPushButton* btn = new QPushButton(text, this);
+        btn->setIcon(QIcon::fromTheme(iconName));
+        if (!objName.isEmpty()) btn->setObjectName(objName);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setStyleSheet(
+            "QPushButton { "
+            "   border: 1px solid transparent; "
+            "   border-radius: 4px; "
+            "   padding: 6px 12px; "
+            "   background: transparent; "
+            "   color: #333333; "
+            "   font-weight: 500; "
+            "}"
+            "QPushButton:hover { background: #EAEAEA; border-color: #D0D0D0; }"
+            "QPushButton:pressed { background: #DADADA; }"
+            "QPushButton#PrimaryAction { "
+            "   background: #0078D4; "
+            "   color: white; "
+            "}"
+            "QPushButton#PrimaryAction:hover { background: #106EBE; }"
+        );
+        return btn;
+    };
+    
+    m_extractBtn = createBtn("解压全部", "archive-extract", "PrimaryAction");
+    m_addBtn = createBtn("添加文件", "list-add");
+    m_deleteBtn = createBtn("删除", "edit-delete");
+    m_infoBtn = createBtn("属性信息", "dialog-information");
+    
+    btnLayout->addWidget(m_extractBtn);
+    btnLayout->addWidget(m_addBtn);
+    btnLayout->addWidget(m_deleteBtn);
+    btnLayout->addStretch();
+    btnLayout->addWidget(m_infoBtn);
+    
+    // 2. Address Bar Row
+    QHBoxLayout* addressLayout = new QHBoxLayout();
+    
+    QLabel* pathLabel = new QLabel("位置:", this);
+    pathLabel->setStyleSheet("color: #666666; font-weight: bold;");
+    
+    m_pathEdit = new QLineEdit(this);
+    m_pathEdit->setReadOnly(true);
+    m_pathEdit->setText(QString::fromStdString(m_archivePath.c_str()));
+    m_pathEdit->setStyleSheet(
+        "QLineEdit { "
+        "   border: 1px solid #E0E0E0; "
+        "   border-radius: 4px; "
+        "   padding: 6px; "
+        "   background: #FFFFFF; "
+        "   color: #333333; "
         "}"
     );
     
-    // 创建工具按钮
-    m_openBtn = new QPushButton("打开", this);
-    m_extractBtn = new QPushButton("解压", this);
-    m_newFolderBtn = new QPushButton("新建", this);
-    m_addBtn = new QPushButton("添加", this);
-    m_deleteBtn = new QPushButton("删除", this);
-    m_testBtn = new QPushButton("测试", this);
-    m_propertiesBtn = new QPushButton("查看", this);
-    m_helpBtn = new QPushButton("代码页", this);
+    addressLayout->addWidget(pathLabel);
+    addressLayout->addWidget(m_pathEdit);
     
-    // 添加按钮到工具栏
-    m_toolBar->addWidget(m_openBtn);
-    m_toolBar->addSeparator();
-    m_toolBar->addWidget(m_extractBtn);
-    m_toolBar->addSeparator();
-    m_toolBar->addWidget(m_newFolderBtn);
-    m_toolBar->addWidget(m_addBtn);
-    m_toolBar->addWidget(m_deleteBtn);
-    m_toolBar->addSeparator();
-    m_toolBar->addWidget(m_testBtn);
-    m_toolBar->addSeparator();
-    m_toolBar->addWidget(m_propertiesBtn);
-    m_toolBar->addSeparator();
-    m_toolBar->addWidget(m_helpBtn);
+    panelLayout->addLayout(btnLayout);
+    panelLayout->addLayout(addressLayout);
     
-    m_mainLayout->addWidget(m_toolBar);
+    m_mainLayout->addWidget(m_topPanel);
 }
 
 void ArchiveView::setupFileList() {
     m_fileList = new QTreeWidget(this);
-    
-    // 设置列
-    QStringList headers;
-    headers << "名称" << "修改日期" << "类型" << "压缩后大小" << "大小";
-    m_fileList->setHeaderLabels(headers);
-    
-    // 设置列宽
-    m_fileList->setColumnWidth(0, 300);
-    m_fileList->setColumnWidth(1, 200);
-    m_fileList->setColumnWidth(2, 150);
-    m_fileList->setColumnWidth(3, 120);
-    m_fileList->setColumnWidth(4, 120);
-    
-    // 设置样式
-    m_fileList->setStyleSheet(
-        "QTreeWidget {"
-        "   background-color: white;"
-        "   border: 1px solid #E0E0E0;"
-        "   alternate-background-color: #F9F9F9;"
-        "}"
-        "QTreeWidget::item {"
-        "   padding: 4px;"
-        "}"
-        "QTreeWidget::item:selected {"
-        "   background-color: #E3F2FD;"
-        "   color: black;"
-        "}"
-        "QTreeWidget::item:hover {"
-        "   background-color: #F5F5F5;"
-        "}"
-        "QHeaderView::section {"
-        "   background-color: #F0F0F0;"
-        "   padding: 6px;"
-        "   border: none;"
-        "   border-right: 1px solid #E0E0E0;"
-        "   border-bottom: 1px solid #E0E0E0;"
-        "   font-weight: bold;"
-        "}"
-    );
+    m_fileList->setHeaderLabels({"名称", "大小", "类型", "修改日期"});
+    m_fileList->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    m_fileList->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    m_fileList->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_fileList->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     
     m_fileList->setAlternatingRowColors(true);
     m_fileList->setRootIsDecorated(true);
     m_fileList->setSortingEnabled(true);
     m_fileList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_fileList->setIndentation(20);
+    
+    // Item Style
+    m_fileList->setStyleSheet(
+        "QTreeWidget::item { padding: 4px; }"
+        "QTreeWidget::item:selected { background-color: #E3F2FD; color: #333333; }"
+        "QTreeWidget::item:hover { background-color: #F5F5F5; }"
+    );
     
     m_mainLayout->addWidget(m_fileList);
 }
 
 void ArchiveView::setupConnections() {
-    connect(m_openBtn, &QPushButton::clicked, this, &ArchiveView::onOpen);
     connect(m_extractBtn, &QPushButton::clicked, this, &ArchiveView::onExtract);
-    connect(m_newFolderBtn, &QPushButton::clicked, this, &ArchiveView::onNewFolder);
     connect(m_addBtn, &QPushButton::clicked, this, &ArchiveView::onAdd);
     connect(m_deleteBtn, &QPushButton::clicked, this, &ArchiveView::onDelete);
-    connect(m_testBtn, &QPushButton::clicked, this, &ArchiveView::onTest);
-    connect(m_propertiesBtn, &QPushButton::clicked, this, &ArchiveView::onProperties);
-    connect(m_helpBtn, &QPushButton::clicked, this, &ArchiveView::onHelp);
+    connect(m_infoBtn, &QPushButton::clicked, this, &ArchiveView::onInfo);
 }
 
 void ArchiveView::loadArchive() {
@@ -200,73 +195,71 @@ void ArchiveView::loadArchive() {
     int fileCount;
     inFile.read(reinterpret_cast<char*>(&fileCount), sizeof(int));
     
-    // 读取目录信息
+    // 读取文件列表
     long long totalOriginalSize = 0;
     long long totalCompressedSize = 0;
     
     for (int i = 0; i < fileCount; ++i) {
+        // 读取路径长度
         int pathLen;
         inFile.read(reinterpret_cast<char*>(&pathLen), sizeof(int));
         
-        char* pathBuf = new char[pathLen + 1];
-        inFile.read(pathBuf, pathLen);
+        // 读取路径
+        std::vector<char> pathBuf(pathLen + 1);
+        inFile.read(pathBuf.data(), pathLen);
         pathBuf[pathLen] = '\0';
-        QString relativePath = QString::fromUtf8(pathBuf);
-        delete[] pathBuf;
+        QString path = QString::fromUtf8(pathBuf.data());
         
-        long long origSize, compSize, offset;
-        inFile.read(reinterpret_cast<char*>(&origSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&compSize), sizeof(long long));
+        // 读取大小信息
+        long long originalSize, compressedSize, offset;
+        inFile.read(reinterpret_cast<char*>(&originalSize), sizeof(long long));
+        inFile.read(reinterpret_cast<char*>(&compressedSize), sizeof(long long));
         inFile.read(reinterpret_cast<char*>(&offset), sizeof(long long));
         
-        totalOriginalSize += origSize;
-        totalCompressedSize += compSize;
+        totalOriginalSize += originalSize;
+        totalCompressedSize += compressedSize;
         
-        // 创建树形项
+        // 添加到列表
         QTreeWidgetItem* item = new QTreeWidgetItem(m_fileList);
-        item->setText(0, relativePath);
-        item->setText(1, ""); // 修改日期（暂时为空）
-        
-        // 根据扩展名判断类型
-        QString ext = relativePath.split('.').last().toLower();
-        QString fileType;
-        if (ext == "txt") fileType = "文本文档";
-        else if (ext == "cpp" || ext == "h") fileType = "C++ 源文件";
-        else if (ext == "json") fileType = "JSON 源文件";
-        else if (ext == "html") fileType = "Microsoft Edge HTML 文档";
-        else if (ext == "ini") fileType = "配置文件";
-        else fileType = ext.toUpper() + " 文件";
-        
-        item->setText(2, fileType);
-        item->setText(3, QString::number(compSize));
-        item->setText(4, QString::number(origSize));
-        
-        m_fileList->addTopLevelItem(item);
+        item->setText(0, path); // 暂时直接显示完整路径，后续可优化为树状结构
+        item->setIcon(0, QIcon::fromTheme("text-x-generic"));
+        item->setText(1, QString::number(originalSize / 1024.0, 'f', 1) + " KB");
+        item->setText(2, "文件");
+        item->setText(3, "-");
     }
     
     inFile.close();
     
     // 更新状态栏
-    double compressionRatio = totalOriginalSize > 0 ? 
-        (double)totalCompressedSize / totalOriginalSize * 100.0 : 0.0;
-    
     m_statusLabel->setText(
-        QString("文件: %1, 文件夹: 0, 压缩后大小: %2 MB")
+        QString("包含 %1 个文件 | 总大小: %2 MB")
             .arg(fileCount)
-            .arg(totalCompressedSize / (1024.0 * 1024.0), 0, 'f', 2)
+            .arg(totalOriginalSize / (1024.0 * 1024.0), 0, 'f', 2)
     );
 }
 
-void ArchiveView::onOpen() {
-    // TODO: 打开选中的文件
-}
-
 void ArchiveView::onExtract() {
-    // TODO: 解压选中的文件
-}
-
-void ArchiveView::onNewFolder() {
-    // TODO: 在压缩包中新建文件夹
+    QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
+    DecompressDialog dialog(qArchivePath, this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        Structure::String destPath = dialog.getDestinationPath();
+        bool openFolder = dialog.shouldOpenFolder();
+        
+        // 执行解压
+        Command::DecompressDirectoryCommand cmd(m_archivePath, destPath);
+        if (cmd.execute()) {
+            QMessageBox::information(this, "成功", "解压完成！");
+            
+            if (openFolder) {
+                QString qDestPath = QString::fromStdString(destPath.c_str());
+                QDesktopServices::openUrl(QUrl::fromLocalFile(qDestPath));
+            }
+        } else {
+            QMessageBox::critical(this, "失败", 
+                QString("解压失败：%1").arg(cmd.getErrorMessage().c_str()));
+        }
+    }
 }
 
 void ArchiveView::onAdd() {
@@ -277,16 +270,8 @@ void ArchiveView::onDelete() {
     // TODO: 从压缩包删除文件
 }
 
-void ArchiveView::onTest() {
-    // TODO: 测试压缩文件完整性
-}
-
-void ArchiveView::onProperties() {
+void ArchiveView::onInfo() {
     // TODO: 显示文件属性
-}
-
-void ArchiveView::onHelp() {
-    // TODO: 显示代码页帮助
 }
 
 }
