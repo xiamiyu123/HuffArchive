@@ -1,6 +1,5 @@
 #include "structure/HuffmanTree.h"
 #include <algorithm>
-#include <utility>
 #include <limits>
 #include <iostream>
 #include <stdexcept>
