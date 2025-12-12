@@ -45,7 +45,15 @@ bool CompressMultipleSourcesCommand::execute() {
         if (m_progressCallback) {
             compressCmd.setProgressCallback(m_progressCallback);
         }
+        if (m_checkCancelCallback) {
+            compressCmd.setCheckCancelCallback(m_checkCancelCallback);
+        }
         compressCmd.execute();
+        
+        if (m_checkCancelCallback && m_checkCancelCallback()) {
+            m_errorMessage = Structure::String("Operation cancelled by user");
+            return false;
+        }
 
         return true;
     } catch (const std::exception& e) {

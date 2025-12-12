@@ -18,7 +18,9 @@ class CompressionWorker : public QObject {
     Q_OBJECT
 public:
     CompressionWorker(const Structure::ArrayList<Structure::String>& files, const Structure::String& output)
-        : m_files(files), m_output(output) {}
+        : m_files(files), m_output(output), m_isCancelled(false) {}
+
+    void cancel() { m_isCancelled = true; }
 
 public slots:
     void process() {
@@ -26,6 +28,10 @@ public slots:
         
         cmd.setProgressCallback([this](float p, const std::string& msg) {
             emit progress(static_cast<int>(p * 100), QString::fromStdString(msg));
+        });
+        
+        cmd.setCheckCancelCallback([this]() {
+            return m_isCancelled.load();
         });
         
         bool success = cmd.execute();
@@ -39,10 +45,11 @@ signals:
 private:
     Structure::ArrayList<Structure::String> m_files;
     Structure::String m_output;
+    std::atomic<bool> m_isCancelled;
 };
 
 NewArchiveDialog::NewArchiveDialog(QWidget *parent)
-    : QDialog(parent), m_isCompressing(false)
+    : QDialog(parent), m_isCompressing(false), m_worker(nullptr)
 {
     setupUI();
     setupConnections();
@@ -252,7 +259,7 @@ void NewArchiveDialog::setupConnections() {
     connect(m_clearBtn, &QPushButton::clicked, this, &NewArchiveDialog::onClearAll);
     connect(m_browseBtn, &QPushButton::clicked, this, &NewArchiveDialog::onBrowseDest);
     connect(m_compressBtn, &QPushButton::clicked, this, &NewArchiveDialog::onCompress);
-    connect(m_cancelBtn, &QPushButton::clicked, this, &NewArchiveDialog::reject);
+    connect(m_cancelBtn, &QPushButton::clicked, this, &NewArchiveDialog::onCancelClicked);
 }
 
 void NewArchiveDialog::dragEnterEvent(QDragEnterEvent *event) {
@@ -371,7 +378,8 @@ void NewArchiveDialog::onCompress() {
     // 更新 UI 状态
     m_isCompressing = true;
     m_compressBtn->setEnabled(false);
-    m_cancelBtn->setEnabled(false);
+    m_cancelBtn->setText("停止");
+    m_cancelBtn->setEnabled(true);
     m_addFilesBtn->setEnabled(false);
     m_addFolderBtn->setEnabled(false);
     m_removeBtn->setEnabled(false);
@@ -386,17 +394,18 @@ void NewArchiveDialog::onCompress() {
     
     // 创建线程和 Worker
     QThread* thread = new QThread;
-    CompressionWorker* worker = new CompressionWorker(m_selectedFiles, outputPath);
-    worker->moveToThread(thread);
+    m_worker = new CompressionWorker(m_selectedFiles, outputPath);
+    m_worker->moveToThread(thread);
     
     // 连接信号槽
-    connect(thread, &QThread::started, worker, &CompressionWorker::process);
-    connect(worker, &CompressionWorker::progress, this, &NewArchiveDialog::onCompressionProgress);
-    connect(worker, &CompressionWorker::finished, this, [this, thread, worker](bool success, QString msg) {
+    connect(thread, &QThread::started, m_worker, &CompressionWorker::process);
+    connect(m_worker, &CompressionWorker::progress, this, &NewArchiveDialog::onCompressionProgress);
+    connect(m_worker, &CompressionWorker::finished, this, [this, thread](bool success, QString msg) {
         // 清理线程
         thread->quit();
         thread->wait();
-        worker->deleteLater();
+        m_worker->deleteLater();
+        m_worker = nullptr;
         thread->deleteLater();
         
         onCompressionFinished(success, msg);
@@ -404,6 +413,18 @@ void NewArchiveDialog::onCompress() {
     
     // 开始执行
     thread->start();
+}
+
+void NewArchiveDialog::onCancelClicked() {
+    if (m_isCompressing) {
+        if (m_worker) {
+            m_worker->cancel();
+            m_statusLabel->setText("正在停止...");
+            m_cancelBtn->setEnabled(false); // 防止重复点击
+        }
+    } else {
+        reject();
+    }
 }
 
 void NewArchiveDialog::onCompressionProgress(int value, QString message) {
@@ -416,6 +437,7 @@ void NewArchiveDialog::onCompressionFinished(bool success, QString msg) {
     
     // 恢复 UI 状态
     m_compressBtn->setEnabled(true);
+    m_cancelBtn->setText("取消");
     m_cancelBtn->setEnabled(true);
     m_addFilesBtn->setEnabled(true);
     m_addFolderBtn->setEnabled(true);
@@ -431,7 +453,12 @@ void NewArchiveDialog::onCompressionFinished(bool success, QString msg) {
         QMessageBox::information(this, "成功", "压缩已完成！");
         accept();
     } else {
-        QMessageBox::critical(this, "失败", QString("压缩失败：%1").arg(msg));
+        // 如果是用户取消，可能不需要弹窗报错，或者提示已取消
+        if (msg.contains("cancelled")) {
+             QMessageBox::information(this, "提示", "压缩已取消。");
+        } else {
+             QMessageBox::critical(this, "失败", QString("压缩失败：%1").arg(msg));
+        }
     }
 }
 

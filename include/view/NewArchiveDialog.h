@@ -67,6 +67,9 @@ private:
     bool m_isCompressing;
     
     Structure::ArrayList<Structure::String> m_selectedFiles;
+    
+    // Worker
+    class CompressionWorker* m_worker;
 
 private slots:
     void onAddFiles();
@@ -75,6 +78,7 @@ private slots:
     void onClearAll();
     void onBrowseDest();
     void onCompress();
+    void onCancelClicked();
     void onCompressionProgress(int value, QString message);
     void onCompressionFinished(bool success, QString message);
 };

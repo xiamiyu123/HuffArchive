@@ -54,7 +54,10 @@ public:
     const Model::DataModel& getModel() const;
 
     using ProgressCallback = std::function<void(float progress, const std::string& message)>;
+    using CheckCancelCallback = std::function<bool()>;
+    
     void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }
+    void setCheckCancelCallback(CheckCancelCallback cb) { m_checkCancelCallback = cb; }
 
 private:
     Structure::ArrayList<Structure::String> m_sourcePaths;
@@ -62,6 +65,7 @@ private:
     Structure::String m_errorMessage;
     Model::DataModel m_model;
     ProgressCallback m_progressCallback;
+    CheckCancelCallback m_checkCancelCallback;
 
     /**
      * @brief 收集所有源路径中的文件

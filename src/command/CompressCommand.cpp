@@ -23,6 +23,8 @@ void CompressCommand::execute() {
     int fileCount = m_model->getFileCount();
 
     for (int i = 0; i < fileCount; ++i) {
+        if (m_checkCancelCallback && m_checkCancelCallback()) return;
+
         if (m_progressCallback) {
             float p = 0.4f * (float)i / fileCount;
             m_model->getFile(i).getFilePath(); // Ensure path is valid
@@ -97,6 +99,12 @@ void CompressCommand::execute() {
     IO::BitStream bitStream;
     
     for (int i = 0; i < fileCount; ++i) {
+        if (m_checkCancelCallback && m_checkCancelCallback()) {
+            outFile.close();
+            std::filesystem::remove(outPath); // 删除未完成的文件
+            return;
+        }
+
         if (m_progressCallback) {
             float p = 0.5f + 0.5f * (float)i / fileCount;
             std::string name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().string();
