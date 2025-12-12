@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 namespace View {
 
@@ -170,7 +171,7 @@ void ArchiveView::loadArchive() {
     m_fileList->clear();
     
     // 读取压缩文件头信息
-    std::ifstream inFile(m_archivePath.c_str(), std::ios::binary);
+    std::ifstream inFile(std::filesystem::path(reinterpret_cast<const char8_t*>(m_archivePath.c_str())), std::ios::binary);
     if (!inFile) {
         m_statusLabel->setText("无法打开文件: " + QString::fromStdString(m_archivePath.c_str()));
         return;
