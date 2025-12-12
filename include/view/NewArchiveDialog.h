@@ -61,6 +61,11 @@ private:
     QPushButton* m_compressBtn;
     QPushButton* m_cancelBtn;
     
+    // Progress
+    QProgressBar* m_progressBar;
+    QLabel* m_statusLabel;
+    bool m_isCompressing;
+    
     Structure::ArrayList<Structure::String> m_selectedFiles;
 
 private slots:
@@ -70,6 +75,8 @@ private slots:
     void onClearAll();
     void onBrowseDest();
     void onCompress();
+    void onCompressionProgress(int value, QString message);
+    void onCompressionFinished(bool success, QString message);
 };
 
 }

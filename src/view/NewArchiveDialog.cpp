@@ -8,11 +8,41 @@
 #include <QMimeData>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QProgressDialog>
+#include <QThread>
 
 namespace View {
 
+// Worker class for background compression
+class CompressionWorker : public QObject {
+    Q_OBJECT
+public:
+    CompressionWorker(const Structure::ArrayList<Structure::String>& files, const Structure::String& output)
+        : m_files(files), m_output(output) {}
+
+public slots:
+    void process() {
+        Command::CompressMultipleSourcesCommand cmd(m_files, m_output);
+        
+        cmd.setProgressCallback([this](float p, const std::string& msg) {
+            emit progress(static_cast<int>(p * 100), QString::fromStdString(msg));
+        });
+        
+        bool success = cmd.execute();
+        emit finished(success, QString::fromStdString(cmd.getErrorMessage().c_str()));
+    }
+
+signals:
+    void progress(int value, QString message);
+    void finished(bool success, QString message);
+
+private:
+    Structure::ArrayList<Structure::String> m_files;
+    Structure::String m_output;
+};
+
 NewArchiveDialog::NewArchiveDialog(QWidget *parent)
-    : QDialog(parent)
+    : QDialog(parent), m_isCompressing(false)
 {
     setupUI();
     setupConnections();
@@ -189,6 +219,29 @@ void NewArchiveDialog::setupBottomPanel() {
     actionLayout->addWidget(m_compressBtn);
     
     m_mainLayout->addWidget(settingsGroup);
+
+    // 进度条区域
+    QVBoxLayout* progressLayout = new QVBoxLayout();
+    progressLayout->setSpacing(4);
+    
+    m_statusLabel = new QLabel(this);
+    m_statusLabel->setStyleSheet("color: #666666; font-size: 12px;");
+    m_statusLabel->setVisible(false);
+    
+    m_progressBar = new QProgressBar(this);
+    m_progressBar->setRange(0, 100);
+    m_progressBar->setValue(0);
+    m_progressBar->setTextVisible(true);
+    m_progressBar->setVisible(false);
+    m_progressBar->setStyleSheet(
+        "QProgressBar { border: 1px solid #E0E0E0; border-radius: 4px; text-align: center; background: #FFFFFF; }"
+        "QProgressBar::chunk { background-color: #0078D4; border-radius: 3px; }"
+    );
+    
+    progressLayout->addWidget(m_statusLabel);
+    progressLayout->addWidget(m_progressBar);
+    m_mainLayout->addLayout(progressLayout);
+    
     m_mainLayout->addLayout(actionLayout);
 }
 
@@ -313,15 +366,72 @@ void NewArchiveDialog::onCompress() {
         return;
     }
     
-    // 执行压缩
     Structure::String outputPath(destPath.toStdString().c_str());
-    Command::CompressMultipleSourcesCommand cmd(m_selectedFiles, outputPath);
     
-    if (cmd.execute()) {
+    // 更新 UI 状态
+    m_isCompressing = true;
+    m_compressBtn->setEnabled(false);
+    m_cancelBtn->setEnabled(false);
+    m_addFilesBtn->setEnabled(false);
+    m_addFolderBtn->setEnabled(false);
+    m_removeBtn->setEnabled(false);
+    m_clearBtn->setEnabled(false);
+    m_destPathEdit->setEnabled(false);
+    m_browseBtn->setEnabled(false);
+    
+    m_progressBar->setValue(0);
+    m_progressBar->setVisible(true);
+    m_statusLabel->setText("正在准备压缩...");
+    m_statusLabel->setVisible(true);
+    
+    // 创建线程和 Worker
+    QThread* thread = new QThread;
+    CompressionWorker* worker = new CompressionWorker(m_selectedFiles, outputPath);
+    worker->moveToThread(thread);
+    
+    // 连接信号槽
+    connect(thread, &QThread::started, worker, &CompressionWorker::process);
+    connect(worker, &CompressionWorker::progress, this, &NewArchiveDialog::onCompressionProgress);
+    connect(worker, &CompressionWorker::finished, this, [this, thread, worker](bool success, QString msg) {
+        // 清理线程
+        thread->quit();
+        thread->wait();
+        worker->deleteLater();
+        thread->deleteLater();
+        
+        onCompressionFinished(success, msg);
+    });
+    
+    // 开始执行
+    thread->start();
+}
+
+void NewArchiveDialog::onCompressionProgress(int value, QString message) {
+    m_progressBar->setValue(value);
+    m_statusLabel->setText(message);
+}
+
+void NewArchiveDialog::onCompressionFinished(bool success, QString msg) {
+    m_isCompressing = false;
+    
+    // 恢复 UI 状态
+    m_compressBtn->setEnabled(true);
+    m_cancelBtn->setEnabled(true);
+    m_addFilesBtn->setEnabled(true);
+    m_addFolderBtn->setEnabled(true);
+    m_removeBtn->setEnabled(true);
+    m_clearBtn->setEnabled(true);
+    m_destPathEdit->setEnabled(true);
+    m_browseBtn->setEnabled(true);
+    
+    m_progressBar->setVisible(false);
+    m_statusLabel->setVisible(false);
+    
+    if (success) {
         QMessageBox::information(this, "成功", "压缩已完成！");
         accept();
     } else {
-        QMessageBox::critical(this, "失败", QString("压缩失败：%1").arg(cmd.getErrorMessage().c_str()));
+        QMessageBox::critical(this, "失败", QString("压缩失败：%1").arg(msg));
     }
 }
 
@@ -334,3 +444,4 @@ Structure::ArrayList<Structure::String> NewArchiveDialog::getFilesToCompress() c
 }
 
 }
+#include "NewArchiveDialog.moc"

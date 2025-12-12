@@ -23,6 +23,13 @@ void CompressCommand::execute() {
     int fileCount = m_model->getFileCount();
 
     for (int i = 0; i < fileCount; ++i) {
+        if (m_progressCallback) {
+            float p = 0.4f * (float)i / fileCount;
+            m_model->getFile(i).getFilePath(); // Ensure path is valid
+            std::string name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().string();
+            m_progressCallback(p, "Analyzing: " + name);
+        }
+
         Model::FileRecord& record = m_model->getFile(i);
         record.setStatus(Model::FileStatus::Processing);
         
@@ -38,10 +45,12 @@ void CompressCommand::execute() {
     }
 
     // 2. 构建哈夫曼树
+    if (m_progressCallback) m_progressCallback(0.4f, "Building Huffman Tree...");
     Structure::HuffmanTree tree;
     tree.build(freqMap);
     
     // 3. 打开输出文件
+    if (m_progressCallback) m_progressCallback(0.45f, "Preparing output file...");
     std::filesystem::path outPath(reinterpret_cast<const char8_t*>(m_outputPath.c_str()));
     std::ofstream outFile(outPath, std::ios::binary);
     if (!outFile) {
@@ -88,6 +97,11 @@ void CompressCommand::execute() {
     IO::BitStream bitStream;
     
     for (int i = 0; i < fileCount; ++i) {
+        if (m_progressCallback) {
+            float p = 0.5f + 0.5f * (float)i / fileCount;
+            std::string name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().string();
+            m_progressCallback(p, "Compressing: " + name);
+        }
         Model::FileRecord& record = m_model->getFile(i);
         
         // 记录当前偏移量

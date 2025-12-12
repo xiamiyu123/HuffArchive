@@ -42,6 +42,9 @@ bool CompressMultipleSourcesCommand::execute() {
 
         // 6. 调用底层压缩命令
         CompressCommand compressCmd(&m_model, m_outputPath);
+        if (m_progressCallback) {
+            compressCmd.setProgressCallback(m_progressCallback);
+        }
         compressCmd.execute();
 
         return true;

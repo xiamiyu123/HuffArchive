@@ -3,6 +3,8 @@
 #include "model/DataModel.h"
 #include "structure/String.h"
 #include "structure/ArrayList.h"
+#include <functional>
+#include <string>
 
 namespace Command {
 
@@ -51,11 +53,15 @@ public:
      */
     const Model::DataModel& getModel() const;
 
+    using ProgressCallback = std::function<void(float progress, const std::string& message)>;
+    void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }
+
 private:
     Structure::ArrayList<Structure::String> m_sourcePaths;
     Structure::String m_outputPath;
     Structure::String m_errorMessage;
     Model::DataModel m_model;
+    ProgressCallback m_progressCallback;
 
     /**
      * @brief 收集所有源路径中的文件
