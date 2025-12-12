@@ -3,13 +3,14 @@
 #include <QDialog>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QListWidget>
+#include <QTableWidget>
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
 #include <QCheckBox>
 #include <QLabel>
 #include <QGroupBox>
+#include <QProgressBar>
 #include "structure/String.h"
 #include "structure/ArrayList.h"
 
@@ -25,42 +26,50 @@ public:
     Structure::String getArchivePath() const;
     Structure::ArrayList<Structure::String> getFilesToCompress() const;
 
+protected:
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+
 private:
     void setupUI();
-    void setupFileListSection();
-    void setupArchiveSettingsSection();
+    void setupHeader();
+    void setupFileList();
+    void setupBottomPanel();
     void setupConnections();
+    void updateFileTable();
     
     // UI Components
     QVBoxLayout* m_mainLayout;
     
-    // 文件列表区域
-    QGroupBox* m_fileListGroup;
-    QListWidget* m_fileList;
-    QPushButton* m_addButton;
-    QPushButton* m_addFolderButton;
-    QPushButton* m_deleteButton;
+    // Header
+    QLabel* m_titleLabel;
+    QLabel* m_subtitleLabel;
     
-    // 压缩文件设置区域
-    QGroupBox* m_settingsGroup;
-    QLineEdit* m_archivePathEdit;
-    QPushButton* m_browseButton;
-    QComboBox* m_formatCombo;
-    QCheckBox* m_moreOptionsCheckBox;
+    // File List
+    QTableWidget* m_fileTable;
+    QPushButton* m_addFilesBtn;
+    QPushButton* m_addFolderBtn;
+    QPushButton* m_removeBtn;
+    QPushButton* m_clearBtn;
     
-    // 底部按钮
-    QPushButton* m_startButton;
-    QPushButton* m_cancelButton;
+    // Settings
+    QLineEdit* m_destPathEdit;
+    QPushButton* m_browseBtn;
+    QComboBox* m_compressionLevelCombo;
+    
+    // Bottom
+    QPushButton* m_compressBtn;
+    QPushButton* m_cancelBtn;
     
     Structure::ArrayList<Structure::String> m_selectedFiles;
 
 private slots:
     void onAddFiles();
     void onAddFolder();
-    void onDeleteFiles();
-    void onBrowse();
-    void onStart();
-    void onCancel();
+    void onRemoveSelected();
+    void onClearAll();
+    void onBrowseDest();
+    void onCompress();
 };
 
 }

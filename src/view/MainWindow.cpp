@@ -261,30 +261,14 @@ void MainWindow::onNewArchive() {
     NewArchiveDialog dialog(this);
     
     if (dialog.exec() == QDialog::Accepted) {
+        // 压缩已经在对话框中完成
+        // 获取生成的归档文件路径并打开
         Structure::String archivePath = dialog.getArchivePath();
-        Structure::ArrayList<Structure::String> filesToCompress = dialog.getFilesToCompress();
+        QString qArchivePath = QString::fromStdString(archivePath.c_str());
         
-        if (filesToCompress.empty()) {
-            QMessageBox::warning(this, "错误", "没有选择要压缩的文件");
-            return;
+        if (QFileInfo::exists(qArchivePath)) {
+            showArchiveView(qArchivePath);
         }
-        
-        // 创建进度对话框
-        QProgressDialog progressDialog("正在压缩文件...", "取消", 0, 0, this);
-        progressDialog.setWindowModality(Qt::WindowModal);
-        progressDialog.setMinimumDuration(0);
-        progressDialog.show();
-        
-        // TODO: 实际的压缩逻辑
-        // 这里需要实现将多个文件压缩到一个归档的功能
-        // 当前的 CompressDirectoryCommand 只支持目录压缩
-        
-        progressDialog.close();
-        
-        QMessageBox::information(this, "提示", 
-            QString("压缩功能待完善\n已选择 %1 个文件\n目标: %2")
-                .arg(filesToCompress.size())
-                .arg(QString::fromStdString(archivePath.c_str())));
     }
 }
 

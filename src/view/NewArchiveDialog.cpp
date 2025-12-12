@@ -4,27 +4,19 @@
 #include <QMessageBox>
 #include <QStandardPaths>
 #include <QHeaderView>
+#include <QDragEnterEvent>
+#include <QMimeData>
+#include <QFileInfo>
+#include <QDateTime>
 
 namespace View {
 
 NewArchiveDialog::NewArchiveDialog(QWidget *parent)
-    : QDialog(parent),
-      m_mainLayout(nullptr),
-      m_fileListGroup(nullptr),
-      m_fileList(nullptr),
-      m_addButton(nullptr),
-      m_addFolderButton(nullptr),
-      m_deleteButton(nullptr),
-      m_settingsGroup(nullptr),
-      m_archivePathEdit(nullptr),
-      m_browseButton(nullptr),
-      m_formatCombo(nullptr),
-      m_moreOptionsCheckBox(nullptr),
-      m_startButton(nullptr),
-      m_cancelButton(nullptr)
+    : QDialog(parent)
 {
     setupUI();
     setupConnections();
+    setAcceptDrops(true);
 }
 
 NewArchiveDialog::~NewArchiveDialog() {
@@ -32,328 +24,313 @@ NewArchiveDialog::~NewArchiveDialog() {
 
 void NewArchiveDialog::setupUI() {
     setWindowTitle("新建压缩文件");
-    setMinimumSize(900, 600);
+    setMinimumSize(800, 500);
+    resize(800, 500);
     
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setSpacing(10);
-    m_mainLayout->setContentsMargins(10, 10, 10, 10);
+    m_mainLayout->setSpacing(20);
+    m_mainLayout->setContentsMargins(24, 24, 24, 24);
     
-    // 设置文件列表区域
-    setupFileListSection();
+    setupHeader();
+    setupFileList();
+    setupBottomPanel();
     
-    // 设置压缩文件设置区域
-    setupArchiveSettingsSection();
-    
-    // 创建底部按钮布局
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
-    buttonLayout->addStretch();
-    
-    m_startButton = new QPushButton("开始(S)", this);
-    m_startButton->setMinimumWidth(100);
-    m_startButton->setDefault(true);
-    
-    m_cancelButton = new QPushButton("取消", this);
-    m_cancelButton->setMinimumWidth(100);
-    
-    buttonLayout->addWidget(m_startButton);
-    buttonLayout->addWidget(m_cancelButton);
-    
-    m_mainLayout->addLayout(buttonLayout);
-    
-    // 设置对话框样式
+    // 设置默认样式
     setStyleSheet(
-        "QDialog {"
-        "   background-color: white;"
+        "QDialog { background-color: #FFFFFF; }"
+        "QLabel { color: #333333; }"
+        "QLineEdit { "
+        "   border: 1px solid #E0E0E0; "
+        "   border-radius: 4px; "
+        "   padding: 8px; "
+        "   background: #FAFAFA; "
+        "   selection-background-color: #0078D4; "
         "}"
-        "QGroupBox {"
-        "   font-weight: bold;"
-        "   border: 1px solid #D0D0D0;"
-        "   border-radius: 4px;"
-        "   margin-top: 8px;"
-        "   padding-top: 8px;"
+        "QLineEdit:focus { border-color: #0078D4; background: #FFFFFF; }"
+        "QTableWidget { "
+        "   border: 1px solid #E0E0E0; "
+        "   border-radius: 4px; "
+        "   background: #FFFFFF; "
+        "   gridline-color: #F0F0F0; "
         "}"
-        "QGroupBox::title {"
-        "   subcontrol-origin: margin;"
-        "   subcontrol-position: top left;"
-        "   padding: 0 5px;"
-        "   color: #333;"
+        "QHeaderView::section { "
+        "   background-color: #FAFAFA; "
+        "   border: none; "
+        "   border-bottom: 1px solid #E0E0E0; "
+        "   padding: 6px; "
+        "   font-weight: bold; "
+        "   color: #666666; "
         "}"
-        "QPushButton {"
-        "   background-color: #F0F0F0;"
-        "   border: 1px solid #C0C0C0;"
-        "   border-radius: 3px;"
-        "   padding: 5px 15px;"
-        "   min-height: 24px;"
+        "QPushButton { "
+        "   border: 1px solid #E0E0E0; "
+        "   border-radius: 4px; "
+        "   padding: 6px 16px; "
+        "   background: #FFFFFF; "
+        "   color: #333333; "
         "}"
-        "QPushButton:hover {"
-        "   background-color: #E5F3FF;"
-        "   border-color: #0078D7;"
+        "QPushButton:hover { background: #F5F5F5; border-color: #D0D0D0; }"
+        "QPushButton:pressed { background: #E0E0E0; }"
+        "QPushButton#PrimaryButton { "
+        "   background: #0078D4; "
+        "   color: white; "
+        "   border: none; "
+        "   font-weight: bold; "
         "}"
-        "QPushButton:pressed {"
-        "   background-color: #CCE8FF;"
-        "}"
-        "QPushButton:default {"
-        "   border: 2px solid #0078D7;"
-        "}"
-        "QLineEdit {"
-        "   border: 1px solid #C0C0C0;"
-        "   border-radius: 3px;"
-        "   padding: 4px;"
-        "   background-color: white;"
-        "}"
-        "QLineEdit:focus {"
-        "   border-color: #0078D7;"
-        "}"
-        "QListWidget {"
-        "   border: 1px solid #C0C0C0;"
-        "   background-color: white;"
-        "}"
-        "QComboBox {"
-        "   border: 1px solid #C0C0C0;"
-        "   border-radius: 3px;"
-        "   padding: 4px;"
-        "   background-color: white;"
-        "}"
+        "QPushButton#PrimaryButton:hover { background: #106EBE; }"
+        "QPushButton#PrimaryButton:pressed { background: #005A9E; }"
+        "QPushButton#DangerButton { color: #D13438; }"
+        "QPushButton#DangerButton:hover { background: #FDF3F4; border-color: #D13438; }"
     );
 }
 
-void NewArchiveDialog::setupFileListSection() {
-    m_fileListGroup = new QGroupBox("添加文件到压缩文件", this);
-    QVBoxLayout* groupLayout = new QVBoxLayout(m_fileListGroup);
+void NewArchiveDialog::setupHeader() {
+    QVBoxLayout* headerLayout = new QVBoxLayout();
+    headerLayout->setSpacing(4);
     
-    // 创建文件列表
-    m_fileList = new QListWidget(this);
-    m_fileList->setMinimumHeight(250);
-    m_fileList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_titleLabel = new QLabel("创建新的压缩归档", this);
+    QFont titleFont = font();
+    titleFont.setPointSize(16);
+    titleFont.setBold(true);
+    m_titleLabel->setFont(titleFont);
     
-    // 添加表头标签
-    QHBoxLayout* headerLayout = new QHBoxLayout();
-    QLabel* nameLabel = new QLabel("名称", this);
-    QLabel* sizeLabel = new QLabel("大小", this);
-    QLabel* pathLabel = new QLabel("文件夹路径", this);
+    m_subtitleLabel = new QLabel("添加文件或文件夹，设置压缩选项，然后点击开始。", this);
+    m_subtitleLabel->setStyleSheet("color: #666666;");
     
-    nameLabel->setMinimumWidth(200);
-    sizeLabel->setMinimumWidth(100);
-    pathLabel->setMinimumWidth(300);
+    headerLayout->addWidget(m_titleLabel);
+    headerLayout->addWidget(m_subtitleLabel);
     
-    QFont headerFont;
-    headerFont.setBold(true);
-    nameLabel->setFont(headerFont);
-    sizeLabel->setFont(headerFont);
-    pathLabel->setFont(headerFont);
-    
-    headerLayout->addWidget(nameLabel);
-    headerLayout->addWidget(sizeLabel);
-    headerLayout->addWidget(pathLabel);
-    headerLayout->addStretch();
-    
-    groupLayout->addLayout(headerLayout);
-    groupLayout->addWidget(m_fileList);
-    
-    // 创建按钮布局
-    QHBoxLayout* fileButtonLayout = new QHBoxLayout();
-    
-    m_addButton = new QPushButton("添加文件(A)", this);
-    m_addFolderButton = new QPushButton("添加文件夹(F)", this);
-    m_deleteButton = new QPushButton("删除(D)", this);
-    
-    fileButtonLayout->addWidget(m_addButton);
-    fileButtonLayout->addWidget(m_addFolderButton);
-    fileButtonLayout->addWidget(m_deleteButton);
-    fileButtonLayout->addStretch();
-    
-    groupLayout->addLayout(fileButtonLayout);
-    
-    m_mainLayout->addWidget(m_fileListGroup);
+    m_mainLayout->addLayout(headerLayout);
 }
 
-void NewArchiveDialog::setupArchiveSettingsSection() {
-    m_settingsGroup = new QGroupBox("压缩文件设置", this);
-    QVBoxLayout* groupLayout = new QVBoxLayout(m_settingsGroup);
+void NewArchiveDialog::setupFileList() {
+    QVBoxLayout* listLayout = new QVBoxLayout();
+    listLayout->setSpacing(10);
     
-    // 文件名输入
-    QHBoxLayout* fileNameLayout = new QHBoxLayout();
-    QLabel* fileNameLabel = new QLabel("文件名", this);
-    fileNameLabel->setMinimumWidth(80);
+    // 工具栏
+    QHBoxLayout* toolsLayout = new QHBoxLayout();
     
-    m_archivePathEdit = new QLineEdit(this);
-    m_archivePathEdit->setPlaceholderText("C:\\Users\\xiami\\Documents\\新建压缩文件.huff");
+    m_addFilesBtn = new QPushButton("添加文件", this);
+    m_addFilesBtn->setIcon(QIcon::fromTheme("list-add"));
+    
+    m_addFolderBtn = new QPushButton("添加文件夹", this);
+    m_addFolderBtn->setIcon(QIcon::fromTheme("folder-new"));
+    
+    m_removeBtn = new QPushButton("移除选中", this);
+    m_removeBtn->setObjectName("DangerButton");
+    
+    m_clearBtn = new QPushButton("清空列表", this);
+    
+    toolsLayout->addWidget(m_addFilesBtn);
+    toolsLayout->addWidget(m_addFolderBtn);
+    toolsLayout->addStretch();
+    toolsLayout->addWidget(m_removeBtn);
+    toolsLayout->addWidget(m_clearBtn);
+    
+    // 表格
+    m_fileTable = new QTableWidget(this);
+    m_fileTable->setColumnCount(3);
+    m_fileTable->setHorizontalHeaderLabels({"名称", "大小", "路径"});
+    m_fileTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    m_fileTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    m_fileTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+    m_fileTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_fileTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_fileTable->setShowGrid(false);
+    m_fileTable->setAlternatingRowColors(true);
+    m_fileTable->verticalHeader()->setVisible(false);
+    
+    // 拖拽提示
+    QLabel* dragTip = new QLabel("支持拖拽文件到此处", this);
+    dragTip->setAlignment(Qt::AlignCenter);
+    dragTip->setStyleSheet("color: #999999; font-style: italic; margin-top: 4px;");
+    
+    listLayout->addLayout(toolsLayout);
+    listLayout->addWidget(m_fileTable);
+    listLayout->addWidget(dragTip);
+    
+    m_mainLayout->addLayout(listLayout, 1);
+}
+
+void NewArchiveDialog::setupBottomPanel() {
+    QGroupBox* settingsGroup = new QGroupBox("输出设置", this);
+    QVBoxLayout* settingsLayout = new QVBoxLayout(settingsGroup);
+    settingsLayout->setSpacing(12);
+    
+    // 路径选择
+    QHBoxLayout* pathLayout = new QHBoxLayout();
+    m_destPathEdit = new QLineEdit(this);
+    m_destPathEdit->setPlaceholderText("选择保存位置...");
     
     // 设置默认路径
     QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    m_archivePathEdit->setText(defaultPath + "/新建压缩文件.huff");
+    m_destPathEdit->setText(defaultPath + "/Archive.huff");
     
-    m_browseButton = new QPushButton("浏览(B)...", this);
+    m_browseBtn = new QPushButton("浏览...", this);
     
-    fileNameLayout->addWidget(fileNameLabel);
-    fileNameLayout->addWidget(m_archivePathEdit);
-    fileNameLayout->addWidget(m_browseButton);
+    pathLayout->addWidget(m_destPathEdit);
+    pathLayout->addWidget(m_browseBtn);
     
-    groupLayout->addLayout(fileNameLayout);
+    settingsLayout->addLayout(pathLayout);
     
-    // 保存类型选择
-    QHBoxLayout* formatLayout = new QHBoxLayout();
-    QLabel* formatLabel = new QLabel("保存类型", this);
-    formatLabel->setMinimumWidth(80);
+    // 底部按钮
+    QHBoxLayout* actionLayout = new QHBoxLayout();
+    actionLayout->setContentsMargins(0, 10, 0, 0);
     
-    m_formatCombo = new QComboBox(this);
-    m_formatCombo->addItem("HUFF");
-    m_formatCombo->setEnabled(false); // 只有一种格式，禁用选择
+    m_cancelBtn = new QPushButton("取消", this);
+    m_cancelBtn->setMinimumWidth(100);
     
-    formatLayout->addWidget(formatLabel);
-    formatLayout->addWidget(m_formatCombo);
-    formatLayout->addStretch();
+    m_compressBtn = new QPushButton("开始压缩", this);
+    m_compressBtn->setObjectName("PrimaryButton");
+    m_compressBtn->setMinimumWidth(120);
+    m_compressBtn->setMinimumHeight(36);
     
-    groupLayout->addLayout(formatLayout);
+    actionLayout->addStretch();
+    actionLayout->addWidget(m_cancelBtn);
+    actionLayout->addWidget(m_compressBtn);
     
-    // 更多选项复选框
-    m_moreOptionsCheckBox = new QCheckBox("更多选项...", this);
-    groupLayout->addWidget(m_moreOptionsCheckBox);
-    
-    m_mainLayout->addWidget(m_settingsGroup);
+    m_mainLayout->addWidget(settingsGroup);
+    m_mainLayout->addLayout(actionLayout);
 }
 
 void NewArchiveDialog::setupConnections() {
-    connect(m_addButton, &QPushButton::clicked, this, &NewArchiveDialog::onAddFiles);
-    connect(m_addFolderButton, &QPushButton::clicked, this, &NewArchiveDialog::onAddFolder);
-    connect(m_deleteButton, &QPushButton::clicked, this, &NewArchiveDialog::onDeleteFiles);
-    connect(m_browseButton, &QPushButton::clicked, this, &NewArchiveDialog::onBrowse);
-    connect(m_startButton, &QPushButton::clicked, this, &NewArchiveDialog::onStart);
-    connect(m_cancelButton, &QPushButton::clicked, this, &NewArchiveDialog::onCancel);
+    connect(m_addFilesBtn, &QPushButton::clicked, this, &NewArchiveDialog::onAddFiles);
+    connect(m_addFolderBtn, &QPushButton::clicked, this, &NewArchiveDialog::onAddFolder);
+    connect(m_removeBtn, &QPushButton::clicked, this, &NewArchiveDialog::onRemoveSelected);
+    connect(m_clearBtn, &QPushButton::clicked, this, &NewArchiveDialog::onClearAll);
+    connect(m_browseBtn, &QPushButton::clicked, this, &NewArchiveDialog::onBrowseDest);
+    connect(m_compressBtn, &QPushButton::clicked, this, &NewArchiveDialog::onCompress);
+    connect(m_cancelBtn, &QPushButton::clicked, this, &NewArchiveDialog::reject);
 }
 
-Structure::String NewArchiveDialog::getArchivePath() const {
-    return Structure::String(m_archivePathEdit->text().toStdString().c_str());
+void NewArchiveDialog::dragEnterEvent(QDragEnterEvent *event) {
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
 }
 
-Structure::ArrayList<Structure::String> NewArchiveDialog::getFilesToCompress() const {
-    return m_selectedFiles;
-}
-void NewArchiveDialog::onAddFiles() {
-    // 打开文件选择对话框（支持多选）
-    QStringList fileNames = QFileDialog::getOpenFileNames(
-        this,
-        "选择要添加的文件",
-        QString(),
-        "所有文件 (*.*)"
-    );
-    
-    if (!fileNames.isEmpty()) {
-        for (const QString& fileName : fileNames) {
-            // 添加到列表
-            QFileInfo fileInfo(fileName);
-            
-            // 创建列表项
-            QString itemText = QString("%1\t%2\t%3")
-                .arg(fileInfo.fileName(), -30)
-                .arg(QString::number(fileInfo.size()), -15)
-                .arg(fileInfo.absolutePath());
-            
-            m_fileList->addItem(itemText);
-            
-            // 添加到内部列表
-            m_selectedFiles.add(Structure::String(fileName.toStdString().c_str()));
+void NewArchiveDialog::dropEvent(QDropEvent *event) {
+    const QMimeData* mimeData = event->mimeData();
+    if (mimeData->hasUrls()) {
+        QList<QUrl> urlList = mimeData->urls();
+        for (const QUrl& url : urlList) {
+            QString path = url.toLocalFile();
+            if (!path.isEmpty()) {
+                m_selectedFiles.add(Structure::String(path.toStdString().c_str()));
+            }
         }
+        updateFileTable();
+    }
+}
+
+void NewArchiveDialog::updateFileTable() {
+    m_fileTable->setRowCount(0);
+    
+    for (int i = 0; i < m_selectedFiles.size(); ++i) {
+        QString path = QString::fromStdString(m_selectedFiles[i].c_str());
+        QFileInfo info(path);
+        
+        int row = m_fileTable->rowCount();
+        m_fileTable->insertRow(row);
+        
+        // 名称
+        QTableWidgetItem* nameItem = new QTableWidgetItem(info.fileName());
+        if (info.isDir()) {
+            nameItem->setIcon(QIcon::fromTheme("folder"));
+        } else {
+            nameItem->setIcon(QIcon::fromTheme("text-x-generic"));
+        }
+        m_fileTable->setItem(row, 0, nameItem);
+        
+        // 大小
+        QString sizeStr = info.isDir() ? QString("-") : QString(QString::number(info.size() / 1024.0, 'f', 1) + " KB");
+        m_fileTable->setItem(row, 1, new QTableWidgetItem(sizeStr));
+        
+        // 路径
+        m_fileTable->setItem(row, 2, new QTableWidgetItem(info.absolutePath()));
+    }
+}
+
+void NewArchiveDialog::onAddFiles() {
+    QStringList files = QFileDialog::getOpenFileNames(this, "选择文件", QString(), "所有文件 (*.*)");
+    if (!files.isEmpty()) {
+        for (const QString& file : files) {
+            m_selectedFiles.add(Structure::String(file.toStdString().c_str()));
+        }
+        updateFileTable();
     }
 }
 
 void NewArchiveDialog::onAddFolder() {
-    // 打开文件夹选择对话框
-    QString folderPath = QFileDialog::getExistingDirectory(
-        this,
-        "选择要添加的文件夹",
-        QString(),
-        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
-    );
-    
-    if (!folderPath.isEmpty()) {
-        // 获取文件夹信息
-        QFileInfo folderInfo(folderPath);
-        
-        // 创建列表项（文件夹显示为特殊项）
-        QString itemText = QString("[文件夹] %1\t\t%2")
-            .arg(folderInfo.fileName(), -30)
-            .arg(folderInfo.absolutePath());
-        
-        m_fileList->addItem(itemText);
-        
-        // 添加到内部列表
-        m_selectedFiles.add(Structure::String(folderPath.toStdString().c_str()));
+    QString folder = QFileDialog::getExistingDirectory(this, "选择文件夹");
+    if (!folder.isEmpty()) {
+        m_selectedFiles.add(Structure::String(folder.toStdString().c_str()));
+        updateFileTable();
     }
 }
 
-void NewArchiveDialog::onDeleteFiles() {
-    // 获取选中的项
-    QList<QListWidgetItem*> selectedItems = m_fileList->selectedItems();
+void NewArchiveDialog::onRemoveSelected() {
+    QList<QTableWidgetItem*> items = m_fileTable->selectedItems();
+    if (items.isEmpty()) return;
     
-    if (selectedItems.isEmpty()) {
-        QMessageBox::information(this, "提示", "请先选择要删除的文件");
-        return;
-    }
+    // 获取选中的行（去重）
+    QSet<int> rows;
+    for (auto item : items) rows.insert(item->row());
     
-    // 从后往前删除，避免索引问题
-    for (int i = selectedItems.size() - 1; i >= 0; --i) {
-        int row = m_fileList->row(selectedItems[i]);
-        delete m_fileList->takeItem(row);
-        
-        // 同时从内部列表删除
+    // 从后往前删除
+    QList<int> sortedRows = rows.values();
+    std::sort(sortedRows.begin(), sortedRows.end(), std::greater<int>());
+    
+    for (int row : sortedRows) {
         if (row < m_selectedFiles.size()) {
             m_selectedFiles.remove(row);
         }
     }
+    updateFileTable();
 }
 
-void NewArchiveDialog::onBrowse() {
-    // 打开保存文件对话框
-    QString fileName = QFileDialog::getSaveFileName(
-        this,
-        "选择压缩文件保存位置",
-        m_archivePathEdit->text(),
-        "HUFF 压缩文件 (*.huff);;所有文件 (*.*)"
-    );
-    
-    if (!fileName.isEmpty()) {
-        // 确保文件扩展名为 .huff
-        if (!fileName.endsWith(".huff", Qt::CaseInsensitive)) {
-            fileName += ".huff";
-        }
-        m_archivePathEdit->setText(fileName);
+void NewArchiveDialog::onClearAll() {
+    m_selectedFiles.clear();
+    updateFileTable();
+}
+
+void NewArchiveDialog::onBrowseDest() {
+    QString file = QFileDialog::getSaveFileName(this, "保存为", m_destPathEdit->text(), "HUFF 归档 (*.huff)");
+    if (!file.isEmpty()) {
+        if (!file.endsWith(".huff")) file += ".huff";
+        m_destPathEdit->setText(file);
     }
 }
-void NewArchiveDialog::onStart() {
-    // 验证输入
+
+void NewArchiveDialog::onCompress() {
     if (m_selectedFiles.empty()) {
-        QMessageBox::warning(this, "错误", "请至少添加一个文件");
+        QMessageBox::warning(this, "提示", "请先添加要压缩的文件或文件夹！");
         return;
     }
     
-    if (m_archivePathEdit->text().isEmpty()) {
-        QMessageBox::warning(this, "错误", "请指定压缩文件保存路径");
+    QString destPath = m_destPathEdit->text();
+    if (destPath.isEmpty()) {
+        QMessageBox::warning(this, "提示", "请设置输出文件路径！");
         return;
     }
-    
-    // 使用高阶命令执行压缩
-    Structure::String outputPath = Structure::String(m_archivePathEdit->text().toStdString().c_str());
-    
-    // 创建命令对象（它会自动处理：文件收集、目录展开、相对路径计算）
-    Command::CompressMultipleSourcesCommand compressCmd(m_selectedFiles, outputPath);
     
     // 执行压缩
-    bool success = compressCmd.execute();
+    Structure::String outputPath(destPath.toStdString().c_str());
+    Command::CompressMultipleSourcesCommand cmd(m_selectedFiles, outputPath);
     
-    if (success) {
-        QMessageBox::information(this, "成功", "压缩完成！");
+    if (cmd.execute()) {
+        QMessageBox::information(this, "成功", "压缩已完成！");
         accept();
     } else {
-        // 获取错误信息
-        Structure::String errorMsg = compressCmd.getErrorMessage();
-        QMessageBox::critical(this, "错误", 
-            QString("压缩失败：%1").arg(errorMsg.c_str()));
+        QMessageBox::critical(this, "失败", QString("压缩失败：%1").arg(cmd.getErrorMessage().c_str()));
     }
 }
 
-void NewArchiveDialog::onCancel() {
-    reject();
+Structure::String NewArchiveDialog::getArchivePath() const {
+    return Structure::String(m_destPathEdit->text().toStdString().c_str());
+}
+
+Structure::ArrayList<Structure::String> NewArchiveDialog::getFilesToCompress() const {
+    return m_selectedFiles;
 }
 
 }
