@@ -16,6 +16,11 @@ private:
     fs::path dir1, dir2, dir2Sub;
     fs::path file1, file2, file3, file4, standalone;
     fs::path outputArchive;
+    
+    // 中文路径测试相关
+    fs::path chinesePath;
+    fs::path chineseDir1, chineseDir2;
+    fs::path chineseFile1, chineseFile2, chineseOutputArchive;
 
     void createTestFile(const fs::path& path, const std::string& content) {
         std::ofstream file(path, std::ios::binary);
@@ -26,6 +31,12 @@ private:
         std::ifstream file(path, std::ios::binary);
         return std::string((std::istreambuf_iterator<char>(file)),
                           std::istreambuf_iterator<char>());
+    }
+
+    // 辅助函数：将 fs::path 转换为 UTF-8 编码的 std::string
+    std::string toUtf8(const fs::path& path) {
+        std::u8string u8str = path.u8string();
+        return std::string(reinterpret_cast<const char*>(u8str.c_str()), u8str.length());
     }
 
 private slots:
@@ -59,6 +70,26 @@ private slots:
         if (fs::exists(testDir)) {
             fs::remove_all(testDir);
         }
+        if (fs::exists(chinesePath)) {
+            fs::remove_all(chinesePath);
+        }
+    }
+    
+    void setupChinesePathTest() {
+        // 创建包含中文路径的目录结构
+        chinesePath = fs::temp_directory_path() / u8"哈夫曼编码测试";
+        chineseDir1 = chinesePath / u8"目录一";
+        chineseDir2 = chinesePath / u8"目录二";
+        
+        fs::create_directories(chineseDir1);
+        fs::create_directories(chineseDir2);
+        
+        chineseFile1 = chineseDir1 / u8"文件一.txt";
+        chineseFile2 = chineseDir2 / u8"文件二.txt";
+        chineseOutputArchive = chinesePath / u8"压缩包.huff";
+        
+        createTestFile(chineseFile1, "Chinese path test file 1");
+        createTestFile(chineseFile2, "Chinese path test file 2");
     }
 
     void testCompressSingleFile() {
@@ -204,6 +235,104 @@ private slots:
         
         QCOMPARE(readFile(decompressDir / "dir2" / "subdir" / "file3.txt"), 
                  std::string("Content of file 3 in subdir"));
+    }
+
+    void testCompressChinesePathSingleFile() {
+        setupChinesePathTest();
+        
+        Structure::ArrayList<Structure::String> sources;
+        sources.add(Structure::String(toUtf8(chineseFile1).c_str()));
+        
+        Structure::String outputPath(toUtf8(chineseOutputArchive).c_str());
+        Command::CompressMultipleSourcesCommand cmd(sources, outputPath);
+        
+        QVERIFY2(cmd.execute(), "Failed to compress file with Chinese path");
+        QVERIFY2(fs::exists(chineseOutputArchive), "Archive not created with Chinese path");
+        QCOMPARE(cmd.getModel().getFileCount(), 1);
+    }
+
+    void testCompressChinesePathDirectory() {
+        setupChinesePathTest();
+        
+        Structure::ArrayList<Structure::String> sources;
+        sources.add(Structure::String(toUtf8(chineseDir1).c_str()));
+        
+        Structure::String outputPath(toUtf8(chineseOutputArchive).c_str());
+        Command::CompressMultipleSourcesCommand cmd(sources, outputPath);
+        
+        QVERIFY2(cmd.execute(), "Failed to compress directory with Chinese path");
+        QCOMPARE(cmd.getModel().getFileCount(), 1);
+    }
+
+    void testCompressMultipleChineseDirectories() {
+        setupChinesePathTest();
+        
+        Structure::ArrayList<Structure::String> sources;
+        sources.add(Structure::String(toUtf8(chineseDir1).c_str()));
+        sources.add(Structure::String(toUtf8(chineseDir2).c_str()));
+        
+        Structure::String outputPath(toUtf8(chineseOutputArchive).c_str());
+        Command::CompressMultipleSourcesCommand cmd(sources, outputPath);
+        
+        QVERIFY2(cmd.execute(), "Failed to compress multiple directories with Chinese paths");
+        QCOMPARE(cmd.getModel().getFileCount(), 2);
+    }
+
+    void testCompressAndDecompressChinesePathVerifyContent() {
+        setupChinesePathTest();
+        
+        Structure::ArrayList<Structure::String> sources;
+        sources.add(Structure::String(toUtf8(chineseDir1).c_str()));
+        
+        Structure::String outputPath(toUtf8(chineseOutputArchive).c_str());
+        Command::CompressMultipleSourcesCommand compressCmd(sources, outputPath);
+        
+        QVERIFY2(compressCmd.execute(), "Failed to compress with Chinese source path");
+        
+        // 打印压缩包中的相对路径
+        std::cout << "=== Files in archive (Chinese path) ===" << std::endl;
+        for (int i = 0; i < compressCmd.getModel().getFileCount(); ++i) {
+            const auto& record = compressCmd.getModel().getFile(i);
+            std::cout << "Relative path: " << record.getRelativePath().c_str() << std::endl;
+        }
+        
+        fs::path decompressDir = chinesePath / u8"解压目录";
+        Structure::String decompressPath(toUtf8(decompressDir).c_str());
+        
+        Model::DataModel model;
+        Command::DecompressCommand decompressCmd(&model, outputPath, decompressPath);
+        decompressCmd.execute();
+        
+        // 打印解压后的实际文件
+        std::cout << "=== Decompressed files (Chinese path) ===" << std::endl;
+        for (const auto& entry : fs::recursive_directory_iterator(decompressDir)) {
+            if (fs::is_regular_file(entry)) {
+                std::cout << "Found file: " << entry.path().string() << std::endl;
+            }
+        }
+        
+        // 验证中文目录下的文件
+        fs::path expectedPath = decompressDir / u8"目录一" / u8"文件一.txt";
+        QVERIFY2(fs::exists(expectedPath), 
+                 QString("Expected file not found: %1").arg(QString::fromStdString(expectedPath.string())).toUtf8());
+        
+        QCOMPARE(readFile(expectedPath), 
+                 std::string("Chinese path test file 1"));
+    }
+
+    void testChinesePathWithMixedSources() {
+        setupChinesePathTest();
+        
+        Structure::ArrayList<Structure::String> sources;
+        sources.add(Structure::String(file1.string().c_str()));
+        sources.add(Structure::String(toUtf8(chineseDir1).c_str()));
+        sources.add(Structure::String(toUtf8(chineseFile2).c_str()));
+        
+        Structure::String outputPath(toUtf8(chineseOutputArchive).c_str());
+        Command::CompressMultipleSourcesCommand cmd(sources, outputPath);
+        
+        QVERIFY2(cmd.execute(), "Failed to compress mixed sources with Chinese paths");
+        QCOMPARE(cmd.getModel().getFileCount(), 3);
     }
 };
 

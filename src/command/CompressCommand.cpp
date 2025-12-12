@@ -4,6 +4,7 @@
 #include "io/BitStream.h"
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 namespace Command {
 
@@ -41,7 +42,8 @@ void CompressCommand::execute() {
     tree.build(freqMap);
     
     // 3. 打开输出文件
-    std::ofstream outFile(m_outputPath.c_str(), std::ios::binary);
+    std::filesystem::path outPath(reinterpret_cast<const char8_t*>(m_outputPath.c_str()));
+    std::ofstream outFile(outPath, std::ios::binary);
     if (!outFile) {
         std::cerr << "Failed to open output file: " << m_outputPath.c_str() << std::endl;
         return;

@@ -62,7 +62,7 @@ const Model::DataModel& CompressMultipleSourcesCommand::getModel() const {
 void CompressMultipleSourcesCommand::collectAllFiles() {
     for (int i = 0; i < m_sourcePaths.size(); ++i) {
         const Structure::String& sourceStr = m_sourcePaths[i];
-        fs::path sourcePath(sourceStr.c_str());
+        fs::path sourcePath(reinterpret_cast<const char8_t*>(sourceStr.c_str()));
 
         if (!fs::exists(sourcePath)) {
             // 跳过不存在的路径（可选：记录警告）
@@ -77,7 +77,8 @@ void CompressMultipleSourcesCommand::collectAllFiles() {
             try {
                 for (const auto& entry : fs::recursive_directory_iterator(sourcePath)) {
                     if (fs::is_regular_file(entry)) {
-                        Structure::String filePath(entry.path().string().c_str());
+                        std::u8string u8Path = entry.path().u8string();
+                        Structure::String filePath(reinterpret_cast<const char*>(u8Path.c_str()));
                         m_model.addFile(Model::FileRecord(filePath, Model::FileType::File));
                     }
                 }
