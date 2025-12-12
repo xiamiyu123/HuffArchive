@@ -39,12 +39,14 @@ private:
     
     // Toolbar actions
     QPushButton* m_extractBtn;
+    QPushButton* m_extractSelectedBtn;
     QPushButton* m_addBtn;
     QPushButton* m_deleteBtn;
     QPushButton* m_infoBtn;   // Replaces properties/test/help for cleaner UI
 
 private slots:
     void onExtract();
+    void onExtractSelected();
     void onAdd();
     void onDelete();
     void onInfo();

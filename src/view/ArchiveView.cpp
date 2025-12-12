@@ -1,6 +1,7 @@
 #include "view/ArchiveView.h"
 #include "view/DecompressDialog.h"
 #include "command/DecompressDirectoryCommand.h"
+#include "command/SelectiveDecompressCommand.h"
 #include <QIcon>
 #include <QFileInfo>
 #include <QDateTime>
@@ -93,11 +94,13 @@ void ArchiveView::setupToolBar() {
     };
     
     m_extractBtn = createBtn("解压全部", "archive-extract", "PrimaryAction");
+    m_extractSelectedBtn = createBtn("解压选中", "archive-extract");
     m_addBtn = createBtn("添加文件", "list-add");
     m_deleteBtn = createBtn("删除", "edit-delete");
     m_infoBtn = createBtn("属性信息", "dialog-information");
     
     btnLayout->addWidget(m_extractBtn);
+    btnLayout->addWidget(m_extractSelectedBtn);
     btnLayout->addWidget(m_addBtn);
     btnLayout->addWidget(m_deleteBtn);
     btnLayout->addStretch();
@@ -157,6 +160,7 @@ void ArchiveView::setupFileList() {
 
 void ArchiveView::setupConnections() {
     connect(m_extractBtn, &QPushButton::clicked, this, &ArchiveView::onExtract);
+    connect(m_extractSelectedBtn, &QPushButton::clicked, this, &ArchiveView::onExtractSelected);
     connect(m_addBtn, &QPushButton::clicked, this, &ArchiveView::onAdd);
     connect(m_deleteBtn, &QPushButton::clicked, this, &ArchiveView::onDelete);
     connect(m_infoBtn, &QPushButton::clicked, this, &ArchiveView::onInfo);
@@ -250,6 +254,45 @@ void ArchiveView::onExtract() {
         Command::DecompressDirectoryCommand cmd(m_archivePath, destPath);
         if (cmd.execute()) {
             QMessageBox::information(this, "成功", "解压完成！");
+            
+            if (openFolder) {
+                QString qDestPath = QString::fromStdString(destPath.c_str());
+                QDesktopServices::openUrl(QUrl::fromLocalFile(qDestPath));
+            }
+        } else {
+            QMessageBox::critical(this, "失败", 
+                QString("解压失败：%1").arg(cmd.getErrorMessage().c_str()));
+        }
+    }
+}
+
+void ArchiveView::onExtractSelected() {
+    // 获取选中的文件
+    QList<QTreeWidgetItem*> selectedItems = m_fileList->selectedItems();
+    if (selectedItems.isEmpty()) {
+        QMessageBox::information(this, "提示", "请先选择要解压的文件");
+        return;
+    }
+    
+    // 收集相对路径
+    Structure::ArrayList<Structure::String> filesToExtract;
+    for (QTreeWidgetItem* item : selectedItems) {
+        QString relativePath = item->text(0);  // 第一列是名称（相对路径）
+        filesToExtract.add(Structure::String(relativePath.toStdString().c_str()));
+    }
+    
+    // 弹出解压对话框
+    QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
+    DecompressDialog dialog(qArchivePath, this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        Structure::String destPath = dialog.getDestinationPath();
+        bool openFolder = dialog.shouldOpenFolder();
+        
+        // 执行选择性解压
+        Command::SelectiveDecompressCommand cmd(m_archivePath, destPath, filesToExtract);
+        if (cmd.execute()) {
+            QMessageBox::information(this, "成功", "选中的文件解压完成！");
             
             if (openFolder) {
                 QString qDestPath = QString::fromStdString(destPath.c_str());
