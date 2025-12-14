@@ -3,6 +3,7 @@
 #include "command/DecompressDirectoryCommand.h"
 #include "command/SelectiveDecompressCommand.h"
 #include "command/AddFileCommand.h"
+#include "view/ArchivePropertiesDialog.h"
 #include <QIcon>
 #include <QFileInfo>
 #include <QDateTime>
@@ -335,7 +336,8 @@ void ArchiveView::onDelete() {
 }
 
 void ArchiveView::onInfo() {
-    // TODO: 显示文件属性
+    ArchivePropertiesDialog dialog(m_archivePath, this);
+    dialog.exec();
 }
 
 void ArchiveView::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
