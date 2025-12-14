@@ -2,6 +2,7 @@
 #include "view/DecompressDialog.h"
 #include "command/DecompressDirectoryCommand.h"
 #include "command/SelectiveDecompressCommand.h"
+#include "command/AddFileCommand.h"
 #include <QIcon>
 #include <QFileInfo>
 #include <QDateTime>
@@ -12,6 +13,10 @@
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QFileDialog>
+#include <QProgressDialog>
+#include <QtConcurrent/QtConcurrent>
+#include <QFutureWatcher>
 
 namespace View {
 
@@ -275,7 +280,52 @@ void ArchiveView::onExtractSelected() {
 }
 
 void ArchiveView::onAdd() {
-    // TODO: 添加文件到压缩包
+    QStringList files = QFileDialog::getOpenFileNames(this, "选择要添加的文件");
+    if (files.isEmpty()) return;
+
+    Structure::ArrayList<Structure::String> newFiles;
+    for (const QString& f : files) {
+        newFiles.add(Structure::String(f.toStdString().c_str()));
+    }
+
+    QProgressDialog progress("正在准备...", "取消", 0, 100, this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setMinimumDuration(0);
+    progress.setValue(0);
+
+    // Use a local model for the operation
+    Model::DataModel model;
+    Command::AddFileCommand cmd(&model, m_archivePath, newFiles, m_archivePath);
+    
+    cmd.setProgressCallback([&progress](float p, const std::string& msg) {
+        QMetaObject::invokeMethod(&progress, "setValue", Qt::QueuedConnection, Q_ARG(int, (int)(p * 100)));
+        QMetaObject::invokeMethod(&progress, "setLabelText", Qt::QueuedConnection, Q_ARG(QString, QString::fromStdString(msg)));
+    });
+    
+    cmd.setCheckCancelCallback([&progress]() {
+        return progress.wasCanceled();
+    });
+
+    QFutureWatcher<void> watcher;
+    QEventLoop loop;
+    connect(&watcher, &QFutureWatcher<void>::finished, &loop, &QEventLoop::quit);
+    connect(&progress, &QProgressDialog::canceled, &loop, &QEventLoop::quit);
+
+    QFuture<void> future = QtConcurrent::run([&cmd]() {
+        cmd.execute();
+    });
+    watcher.setFuture(future);
+    
+    progress.show();
+    loop.exec();
+
+    if (progress.wasCanceled()) {
+        watcher.waitForFinished(); // Ensure thread finishes cleanup
+        QMessageBox::information(this, "提示", "操作已取消");
+    } else {
+        loadArchive();
+        QMessageBox::information(this, "完成", "文件添加成功");
+    }
 }
 
 void ArchiveView::onDelete() {
