@@ -38,8 +38,8 @@ else()
     endif()
 endif()
 
-# 查找所需的 Qt6 模块
-find_package(Qt6 COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Concurrent Test REQUIRED)
+# 查找所需的 Qt6 模块 (指定最低版本以确保兼容性)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets Svg OpenGL OpenGLWidgets Concurrent Test)
 
 # 源文件与头文件
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
