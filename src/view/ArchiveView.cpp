@@ -17,6 +17,7 @@
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
+#include <QApplication>
 
 namespace View {
 
@@ -169,6 +170,7 @@ void ArchiveView::setupConnections() {
     connect(m_addBtn, &QPushButton::clicked, this, &ArchiveView::onAdd);
     connect(m_deleteBtn, &QPushButton::clicked, this, &ArchiveView::onDelete);
     connect(m_infoBtn, &QPushButton::clicked, this, &ArchiveView::onInfo);
+    connect(m_fileList, &QTreeWidget::itemDoubleClicked, this, &ArchiveView::onItemDoubleClicked);
 }
 
 void ArchiveView::loadArchive() {
@@ -334,6 +336,49 @@ void ArchiveView::onDelete() {
 
 void ArchiveView::onInfo() {
     // TODO: 显示文件属性
+}
+
+void ArchiveView::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
+    Q_UNUSED(column);
+    if (!item) return;
+    
+    // 获取相对路径
+    QString relativePath = item->text(0);
+    extractAndOpenFile(Structure::String(relativePath.toStdString().c_str()));
+}
+
+void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
+    // 1. 准备临时目录
+    std::filesystem::path tempDir = std::filesystem::current_path() / "tmp";
+    std::error_code ec;
+    std::filesystem::create_directories(tempDir, ec);
+    
+    Structure::String tempDirStr(tempDir.string().c_str());
+    
+    // 2. 准备解压命令
+    Structure::ArrayList<Structure::String> filter;
+    filter.add(relativePath);
+    
+    Command::SelectiveDecompressCommand cmd(m_archivePath, tempDirStr, filter);
+    
+    // 3. 执行解压 (同步执行，因为只是单个文件，通常很快)
+    // 显示等待光标
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    bool success = cmd.execute();
+    QApplication::restoreOverrideCursor();
+    
+    if (!success) {
+        QMessageBox::warning(this, "错误", "无法解压文件: " + QString::fromStdString(cmd.getErrorMessage().c_str()));
+        return;
+    }
+    
+    // 4. 打开文件
+    std::filesystem::path extractedPath = tempDir / std::filesystem::path(reinterpret_cast<const char8_t*>(relativePath.c_str()));
+    QString qPath = QString::fromStdString(extractedPath.string());
+    
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(qPath))) {
+        QMessageBox::warning(this, "错误", "无法打开文件: " + qPath);
+    }
 }
 
 }

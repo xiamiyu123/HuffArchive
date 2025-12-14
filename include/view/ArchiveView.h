@@ -50,6 +50,11 @@ private slots:
     void onAdd();
     void onDelete();
     void onInfo();
+    void onItemDoubleClicked(QTreeWidgetItem* item, int column);
+
+private:
+    // Helper for temporary extraction
+    void extractAndOpenFile(const Structure::String& relativePath);
 };
 
 }
