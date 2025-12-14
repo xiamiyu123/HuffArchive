@@ -45,3 +45,35 @@
    cmake --build .
    ```
 
+## 发布
+
+本项目使用 GitHub Actions 自动构建和发布。
+
+### 手动触发发布
+
+1. 转到 [Actions](https://github.com/xiamiyu123/DataStructureA05/actions) 页面
+2. 选择 "Release Build and Publish" 工作流
+3. 点击 "Run workflow"
+4. 输入版本号（如 v1.0.0）
+5. 选择是否为预发布版本
+6. 点击 "Run workflow"
+
+工作流将自动：
+- 在 Windows 和 Ubuntu 上构建项目
+- 运行测试
+- 打包应用程序
+- 创建 GitHub Release 并上传构建产物
+
+### 本地打包
+
+#### Windows
+```powershell
+.\package_windows.ps1 -BuildType Release
+```
+
+#### Ubuntu
+```bash
+chmod +x package_ubuntu.sh
+./package_ubuntu.sh Release
+```
+
