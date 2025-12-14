@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QPalette>
+#include <filesystem>
 #include "view/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -36,5 +37,14 @@ int main(int argc, char *argv[]) {
     View::MainWindow mainWindow;
     mainWindow.show();
     
-    return app.exec();
+    int ret = app.exec();
+
+    // 清理临时目录
+    std::error_code ec;
+    std::filesystem::path tempDir = std::filesystem::current_path() / "tmp";
+    if (std::filesystem::exists(tempDir)) {
+        std::filesystem::remove_all(tempDir, ec);
+    }
+
+    return ret;
 }
