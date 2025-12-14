@@ -43,6 +43,7 @@ public:
     bool isDirectory() const;
 
     // Setters
+    void setFilePath(const Structure::String& path);
     void setRelativePath(const Structure::String& path);
     void setOriginalSize(long long size);
     void setCompressedSize(long long size);

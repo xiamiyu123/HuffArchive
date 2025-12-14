@@ -2,6 +2,7 @@
 
 #include "structure/String.h"
 #include "structure/ArrayList.h"
+#include <functional>
 
 namespace Command {
 
@@ -55,6 +56,9 @@ public:
      */
     Structure::String getErrorMessage() const;
 
+    void setProgressCallback(std::function<void(float)> callback) { m_progressCallback = callback; }
+    void setCheckCancelCallback(std::function<bool()> callback) { m_checkCancelCallback = callback; }
+
     /**
      * @brief 获取实际解压的文件数量
      */
@@ -72,6 +76,8 @@ private:
     Structure::String m_errorMessage;
     int m_extractedCount;
     int m_skippedCount;
+    std::function<void(float)> m_progressCallback;
+    std::function<bool()> m_checkCancelCallback;
 
     /**
      * @brief 检查文件路径是否在过滤列表中

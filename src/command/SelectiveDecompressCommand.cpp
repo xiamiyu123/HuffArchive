@@ -24,7 +24,7 @@ SelectiveDecompressCommand::~SelectiveDecompressCommand() {
 bool SelectiveDecompressCommand::execute() {
     try {
         // 1. 验证输入文件
-        fs::path inputPath(m_inputPath.c_str());
+        fs::path inputPath(reinterpret_cast<const char8_t*>(m_inputPath.c_str()));
         if (!fs::exists(inputPath)) {
             m_errorMessage = Structure::String("Input archive does not exist: ");
             m_errorMessage = m_errorMessage + m_inputPath;
@@ -37,11 +37,11 @@ bool SelectiveDecompressCommand::execute() {
         }
 
         // 2. 创建输出目录
-        fs::path outputPath(m_outputDir.c_str());
+        fs::path outputPath(reinterpret_cast<const char8_t*>(m_outputDir.c_str()));
         fs::create_directories(outputPath);
 
         // 3. 打开压缩文件并读取头信息
-        std::ifstream inFile(m_inputPath.c_str(), std::ios::binary);
+        std::ifstream inFile(inputPath, std::ios::binary);
         if (!inFile) {
             m_errorMessage = Structure::String("Failed to open input file: ");
             m_errorMessage = m_errorMessage + m_inputPath;
@@ -108,7 +108,22 @@ bool SelectiveDecompressCommand::execute() {
         m_extractedCount = 0;
         m_skippedCount = 0;
 
+        // 计算总大小用于进度条
+        long long totalSize = 0;
         for (int i = 0; i < allFiles.size(); ++i) {
+            if (isFileInFilter(allFiles[i].getRelativePath())) {
+                totalSize += allFiles[i].getCompressedSize();
+            }
+        }
+        long long processedSize = 0;
+
+        for (int i = 0; i < allFiles.size(); ++i) {
+            // 检查取消
+            if (m_checkCancelCallback && m_checkCancelCallback()) {
+                inFile.close();
+                return false;
+            }
+
             Model::FileRecord& record = allFiles[i];
             
             // 检查是否在过滤列表中
@@ -139,10 +154,12 @@ bool SelectiveDecompressCommand::execute() {
                 bitStream.loadBytes(buffer);
                 
                 // 构造输出路径
-                std::filesystem::path outPath = std::filesystem::path(m_outputDir.c_str()) 
-                                                / record.getRelativePath().c_str();
+                std::filesystem::path outDir(reinterpret_cast<const char8_t*>(m_outputDir.c_str()));
+                std::filesystem::path relPath(reinterpret_cast<const char8_t*>(record.getRelativePath().c_str()));
+                std::filesystem::path outPath = outDir / relPath;
+                
                 std::filesystem::create_directories(outPath.parent_path());
-                std::ofstream outFile(outPath.string().c_str(), std::ios::binary);
+                std::ofstream outFile(outPath, std::ios::binary);
                 
                 // 执行解码
                 auto readBitFunc = [&]() -> int {
@@ -159,16 +176,24 @@ bool SelectiveDecompressCommand::execute() {
                 m_extractedCount++;
             } else {
                 // 空文件
-                std::filesystem::path outPath = std::filesystem::path(m_outputDir.c_str()) 
-                                               / record.getRelativePath().c_str();
+                std::filesystem::path outDir(reinterpret_cast<const char8_t*>(m_outputDir.c_str()));
+                std::filesystem::path relPath(reinterpret_cast<const char8_t*>(record.getRelativePath().c_str()));
+                std::filesystem::path outPath = outDir / relPath;
+
                 std::filesystem::create_directories(outPath.parent_path());
-                std::ofstream emptyFile(outPath.string().c_str());
+                std::ofstream emptyFile(outPath, std::ios::binary);
                 emptyFile.close();
                 
                 m_extractedCount++;
             }
             
             record.setStatus(Model::FileStatus::Completed);
+
+            // 更新进度
+            processedSize += size;
+            if (m_progressCallback && totalSize > 0) {
+                m_progressCallback(static_cast<float>(processedSize) / totalSize);
+            }
         }
 
         inFile.close();

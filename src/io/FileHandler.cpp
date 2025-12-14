@@ -1,14 +1,17 @@
 #include "io/FileHandler.h"
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 namespace IO {
 
 Structure::String FileHandler::readText(const Structure::String& path) {
     // 使用二进制模式打开以确保跨平台一致性
-    std::ifstream file(path.c_str(), std::ios::binary);
+    // C++20: 使用 char8_t* 构造 path 以支持 UTF-8
+    std::filesystem::path filePath(reinterpret_cast<const char8_t*>(path.c_str()));
+    std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << path << std::endl;
+        std::cerr << "Failed to open file: " << path.c_str() << std::endl;
         return "";
     }
 
@@ -30,9 +33,10 @@ Structure::String FileHandler::readText(const Structure::String& path) {
 
 bool FileHandler::writeText(const Structure::String& path, const Structure::String& content) {
     // 使用二进制模式写入以确保与 readText 一致，避免换行符转换
-    std::ofstream file(path.c_str(), std::ios::binary);
+    std::filesystem::path filePath(reinterpret_cast<const char8_t*>(path.c_str()));
+    std::ofstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Failed to open file for writing: " << path << std::endl;
+        std::cerr << "Failed to open file for writing: " << path.c_str() << std::endl;
         return false;
     }
 
@@ -43,9 +47,10 @@ bool FileHandler::writeText(const Structure::String& path, const Structure::Stri
 
 Structure::ArrayList<unsigned char> FileHandler::readBinary(const Structure::String& path) {
     Structure::ArrayList<unsigned char> data;
-    std::ifstream file(path.c_str(), std::ios::binary | std::ios::ate);
+    std::filesystem::path filePath(reinterpret_cast<const char8_t*>(path.c_str()));
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
-        std::cerr << "Failed to open binary file: " << path << std::endl;
+        std::cerr << "Failed to open binary file: " << path.c_str() << std::endl;
         return data;
     }
 
@@ -62,9 +67,10 @@ Structure::ArrayList<unsigned char> FileHandler::readBinary(const Structure::Str
 }
 
 bool FileHandler::writeBinary(const Structure::String& path, const Structure::ArrayList<unsigned char>& data) {
-    std::ofstream file(path.c_str(), std::ios::binary);
+    std::filesystem::path filePath(reinterpret_cast<const char8_t*>(path.c_str()));
+    std::ofstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
-        std::cerr << "Failed to open binary file for writing: " << path << std::endl;
+        std::cerr << "Failed to open binary file for writing: " << path.c_str() << std::endl;
         return false;
     }
 

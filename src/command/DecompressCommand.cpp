@@ -19,7 +19,8 @@ void DecompressCommand::execute() {
     if (!m_model) return;
     m_model->clear();
 
-    std::ifstream inFile(m_inputPath.c_str(), std::ios::binary);
+    std::filesystem::path inPath(reinterpret_cast<const char8_t*>(m_inputPath.c_str()));
+    std::ifstream inFile(inPath, std::ios::binary);
     if (!inFile) {
         std::cerr << "Failed to open input file: " << m_inputPath.c_str() << std::endl;
         return;
@@ -85,10 +86,24 @@ void DecompressCommand::execute() {
 
     // 6. 解压所有文件
     // 确保输出目录存在
-    std::filesystem::create_directories(m_outputDir.c_str());
+    std::filesystem::path outDir(reinterpret_cast<const char8_t*>(m_outputDir.c_str()));
+    std::filesystem::create_directories(outDir);
+
+    // 计算总大小用于进度条
+    long long totalSize = 0;
+    for (int i = 0; i < m_model->getFileCount(); ++i) {
+        totalSize += m_model->getFile(i).getCompressedSize();
+    }
+    long long processedSize = 0;
 
     IO::BitStream bitStream;
     for (int i = 0; i < m_model->getFileCount(); ++i) {
+        // 检查取消
+        if (m_checkCancelCallback && m_checkCancelCallback()) {
+            inFile.close();
+            return;
+        }
+
         Model::FileRecord& record = m_model->getFile(i);
         record.setStatus(Model::FileStatus::Processing);
         
@@ -97,15 +112,12 @@ void DecompressCommand::execute() {
         
         // 读取压缩数据
         long long size = record.getCompressedSize();
+        
         if (size > 0) {
             Structure::ArrayList<unsigned char> buffer;
-            // 预分配 buffer? ArrayList 可能没有 resize/reserve 公开接口，只能循环 add
-            // 或者一次性读取到 char* 然后构造 ArrayList
             char* tempBuf = new char[size];
             inFile.read(tempBuf, size);
             
-            // 将 char* 转为 ArrayList<unsigned char>
-            // 这是一个性能瓶颈，但为了兼容现有接口
             for(long long k=0; k<size; ++k) {
                 buffer.add(static_cast<unsigned char>(tempBuf[k]));
             }
@@ -114,35 +126,39 @@ void DecompressCommand::execute() {
             // 解码
             bitStream.loadBytes(buffer);
             
-            // 使用 HuffmanTree 的流式解码接口
-            // 1. 定义 bit 读取器
             auto readBitFunc = [&]() -> int {
                 return bitStream.readBit();
             };
 
-            // 2. 定义 byte 写入器 (直接写入文件流)
             // 构造完整输出路径
-            std::filesystem::path outPath = std::filesystem::path(m_outputDir.c_str()) / record.getRelativePath().c_str();
+            std::filesystem::path relPath(reinterpret_cast<const char8_t*>(record.getRelativePath().c_str()));
+            std::filesystem::path outPath = outDir / relPath;
+            
             std::filesystem::create_directories(outPath.parent_path());
-            std::ofstream outFile(outPath.string().c_str(), std::ios::binary);
+            std::ofstream outFile(outPath, std::ios::binary);
             
             auto writeByteFunc = [&](unsigned char b) {
                 outFile.put(static_cast<char>(b));
             };
 
-            // 3. 执行解码
             tree.decode(readBitFunc, writeByteFunc, record.getOriginalSize());
-            
             outFile.close();
         } else {
             // 空文件
-             std::filesystem::path outPath = std::filesystem::path(m_outputDir.c_str()) / record.getRelativePath().c_str();
+             std::filesystem::path relPath(reinterpret_cast<const char8_t*>(record.getRelativePath().c_str()));
+             std::filesystem::path outPath = outDir / relPath;
              std::filesystem::create_directories(outPath.parent_path());
-             std::ofstream emptyFile(outPath.string().c_str());
+             std::ofstream emptyFile(outPath, std::ios::binary);
              emptyFile.close();
         }
         
         record.setStatus(Model::FileStatus::Completed);
+
+        // 更新进度
+        processedSize += size;
+        if (m_progressCallback && totalSize > 0) {
+            m_progressCallback(static_cast<float>(processedSize) / totalSize);
+        }
     }
 
     inFile.close();

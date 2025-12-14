@@ -84,6 +84,10 @@ bool FileRecord::isDirectory() const {
     return m_type == FileType::Directory;
 }
 
+void FileRecord::setFilePath(const Structure::String& path) {
+    m_filePath = path;
+}
+
 void FileRecord::setRelativePath(const Structure::String& path) {
     m_relativePath = path;
 }

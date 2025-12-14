@@ -19,7 +19,7 @@ CompressDirectoryCommand::~CompressDirectoryCommand() {
 bool CompressDirectoryCommand::execute() {
     try {
         // 1. 验证源路径
-        fs::path sourcePath(m_sourcePath.c_str());
+        fs::path sourcePath(reinterpret_cast<const char8_t*>(m_sourcePath.c_str()));
         if (!fs::exists(sourcePath)) {
             m_errorMessage = Structure::String("Source path does not exist: ");
             m_errorMessage = m_errorMessage + m_sourcePath;
@@ -73,7 +73,9 @@ void CompressDirectoryCommand::collectFiles(const fs::path& dirPath) {
         for (const auto& entry : fs::recursive_directory_iterator(dirPath)) {
             if (fs::is_regular_file(entry)) {
                 // 添加常规文件
-                Structure::String filePath(entry.path().string().c_str());
+                // 使用 u8string() 获取 UTF-8 编码的路径字符串
+                std::u8string u8Path = entry.path().u8string();
+                Structure::String filePath(reinterpret_cast<const char*>(u8Path.c_str()));
                 m_model.addFile(Model::FileRecord(filePath, Model::FileType::File));
             } else if (fs::is_directory(entry)) {
                 // 可选：也添加目录项（用于保持目录结构）
@@ -87,19 +89,19 @@ void CompressDirectoryCommand::collectFiles(const fs::path& dirPath) {
 
 std::filesystem::path CompressDirectoryCommand::computeCommonBasePath() {
     if (m_model.getFileCount() == 0) {
-        return fs::path(m_sourcePath.c_str()).parent_path();
+        return fs::path(reinterpret_cast<const char8_t*>(m_sourcePath.c_str())).parent_path();
     }
 
     if (m_model.getFileCount() == 1) {
         // 单文件情况：基路径是文件的父目录
-        fs::path filePath(m_model.getFile(0).getFilePath().c_str());
+        fs::path filePath(reinterpret_cast<const char8_t*>(m_model.getFile(0).getFilePath().c_str()));
         return filePath.parent_path();
     }
 
     // 多文件情况：找公共前缀路径
     Structure::ArrayList<fs::path> paths;
     for (int i = 0; i < m_model.getFileCount(); ++i) {
-        paths.push_back(fs::path(m_model.getFile(i).getFilePath().c_str()));
+        paths.push_back(fs::path(reinterpret_cast<const char8_t*>(m_model.getFile(i).getFilePath().c_str())));
     }
 
     // 获取第一个文件的路径分量数
@@ -131,11 +133,13 @@ void CompressDirectoryCommand::computeRelativePaths(const fs::path& basePath) {
     for (int i = 0; i < m_model.getFileCount(); ++i) {
         Model::FileRecord& record = m_model.getFile(i);
         
-        fs::path filePath(record.getFilePath().c_str());
+        fs::path filePath(reinterpret_cast<const char8_t*>(record.getFilePath().c_str()));
         fs::path relativePath = fs::relative(filePath, basePath);
         
         // 将路径转换为字符串，使用正斜杠（跨平台兼容）
-        std::string relPathStr = relativePath.string();
+        // 使用 u8string() 确保 UTF-8 编码
+        std::u8string u8RelPath = relativePath.u8string();
+        std::string relPathStr(reinterpret_cast<const char*>(u8RelPath.c_str()));
         // 在 Windows 上，将反斜杠替换为正斜杠
         for (auto& c : relPathStr) {
             if (c == '\\') c = '/';

@@ -1,20 +1,22 @@
 #pragma once
 #include "model/DataModel.h"
 #include "structure/String.h"
+#include "structure/ArrayList.h"
 #include <functional>
 #include <string>
 
 namespace Command {
 
-class CompressCommand {
+class AddFileCommand {
 public:
     using ProgressCallback = std::function<void(float progress, const std::string& message)>;
     using CheckCancelCallback = std::function<bool()>;
 
-    CompressCommand(Model::DataModel* model, const Structure::String& outputPath);
-    ~CompressCommand();
+    AddFileCommand(Model::DataModel* model, const Structure::String& archivePath, 
+                   const Structure::ArrayList<Structure::String>& newFiles, 
+                   const Structure::String& outputArchivePath);
+    ~AddFileCommand();
 
-    // Execute compression
     void execute();
 
     void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }
@@ -22,7 +24,9 @@ public:
 
 private:
     Model::DataModel* m_model;
-    Structure::String m_outputPath;
+    Structure::String m_archivePath;
+    Structure::ArrayList<Structure::String> m_newFiles;
+    Structure::String m_outputArchivePath;
     ProgressCallback m_progressCallback;
     CheckCancelCallback m_checkCancelCallback;
 };
