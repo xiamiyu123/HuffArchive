@@ -108,7 +108,22 @@ bool SelectiveDecompressCommand::execute() {
         m_extractedCount = 0;
         m_skippedCount = 0;
 
+        // 计算总大小用于进度条
+        long long totalSize = 0;
         for (int i = 0; i < allFiles.size(); ++i) {
+            if (isFileInFilter(allFiles[i].getRelativePath())) {
+                totalSize += allFiles[i].getCompressedSize();
+            }
+        }
+        long long processedSize = 0;
+
+        for (int i = 0; i < allFiles.size(); ++i) {
+            // 检查取消
+            if (m_checkCancelCallback && m_checkCancelCallback()) {
+                inFile.close();
+                return false;
+            }
+
             Model::FileRecord& record = allFiles[i];
             
             // 检查是否在过滤列表中
@@ -169,6 +184,12 @@ bool SelectiveDecompressCommand::execute() {
             }
             
             record.setStatus(Model::FileStatus::Completed);
+
+            // 更新进度
+            processedSize += size;
+            if (m_progressCallback && totalSize > 0) {
+                m_progressCallback(static_cast<float>(processedSize) / totalSize);
+            }
         }
 
         inFile.close();

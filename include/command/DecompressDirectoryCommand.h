@@ -1,6 +1,7 @@
 #pragma once
 
 #include "structure/String.h"
+#include <functional>
 
 namespace Command {
 
@@ -38,10 +39,15 @@ public:
      */
     Structure::String getErrorMessage() const;
 
+    void setProgressCallback(std::function<void(float)> callback) { m_progressCallback = callback; }
+    void setCheckCancelCallback(std::function<bool()> callback) { m_checkCancelCallback = callback; }
+
 private:
     Structure::String m_inputPath;
     Structure::String m_outputDir;
     Structure::String m_errorMessage;
+    std::function<void(float)> m_progressCallback;
+    std::function<bool()> m_checkCancelCallback;
 };
 
 }

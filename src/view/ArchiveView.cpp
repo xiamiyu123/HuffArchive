@@ -246,24 +246,8 @@ void ArchiveView::onExtract() {
     QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
     DecompressDialog dialog(qArchivePath, this);
     
-    if (dialog.exec() == QDialog::Accepted) {
-        Structure::String destPath = dialog.getDestinationPath();
-        bool openFolder = dialog.shouldOpenFolder();
-        
-        // 执行解压
-        Command::DecompressDirectoryCommand cmd(m_archivePath, destPath);
-        if (cmd.execute()) {
-            QMessageBox::information(this, "成功", "解压完成！");
-            
-            if (openFolder) {
-                QString qDestPath = QString::fromStdString(destPath.c_str());
-                QDesktopServices::openUrl(QUrl::fromLocalFile(qDestPath));
-            }
-        } else {
-            QMessageBox::critical(this, "失败", 
-                QString("解压失败：%1").arg(cmd.getErrorMessage().c_str()));
-        }
-    }
+    dialog.exec();
+    // Dialog handles execution and success message now
 }
 
 void ArchiveView::onExtractSelected() {
@@ -284,25 +268,10 @@ void ArchiveView::onExtractSelected() {
     // 弹出解压对话框
     QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
     DecompressDialog dialog(qArchivePath, this);
+    dialog.setFilesToExtract(filesToExtract);
     
-    if (dialog.exec() == QDialog::Accepted) {
-        Structure::String destPath = dialog.getDestinationPath();
-        bool openFolder = dialog.shouldOpenFolder();
-        
-        // 执行选择性解压
-        Command::SelectiveDecompressCommand cmd(m_archivePath, destPath, filesToExtract);
-        if (cmd.execute()) {
-            QMessageBox::information(this, "成功", "选中的文件解压完成！");
-            
-            if (openFolder) {
-                QString qDestPath = QString::fromStdString(destPath.c_str());
-                QDesktopServices::openUrl(QUrl::fromLocalFile(qDestPath));
-            }
-        } else {
-            QMessageBox::critical(this, "失败", 
-                QString("解压失败：%1").arg(cmd.getErrorMessage().c_str()));
-        }
-    }
+    dialog.exec();
+    // Dialog handles execution and success message now
 }
 
 void ArchiveView::onAdd() {

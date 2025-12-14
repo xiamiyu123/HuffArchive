@@ -40,6 +40,8 @@ bool DecompressDirectoryCommand::execute() {
         // 4. 调用底层解压命令
         // DecompressCommand 会自动从归档文件中读取并恢复目录结构
         DecompressCommand decompressCmd(&model, m_inputPath, m_outputDir);
+        decompressCmd.setProgressCallback(m_progressCallback);
+        decompressCmd.setCheckCancelCallback(m_checkCancelCallback);
         decompressCmd.execute();
 
         return true;

@@ -1,19 +1,67 @@
 #include "view/DecompressDialog.h"
+#include "command/DecompressDirectoryCommand.h"
+#include "command/SelectiveDecompressCommand.h"
 #include <QFileDialog>
 #include <QStandardPaths>
 #include <QIcon>
 #include <QFileInfo>
+#include <QMessageBox>
+#include <QDesktopServices>
+#include <QUrl>
 
 namespace View {
 
+void DecompressionWorker::process() {
+    bool success = false;
+    Structure::String errorMessage;
+
+    auto progressCallback = [this](float progress) {
+        emit progressUpdated(static_cast<int>(progress * 100));
+    };
+
+    auto cancelCallback = [this]() -> bool {
+        return m_isCancelled.load();
+    };
+
+    if (m_isSelective) {
+        Command::SelectiveDecompressCommand cmd(m_archivePath, m_destPath, m_filesToExtract);
+        cmd.setProgressCallback(progressCallback);
+        cmd.setCheckCancelCallback(cancelCallback);
+        success = cmd.execute();
+        if (!success) errorMessage = cmd.getErrorMessage();
+    } else {
+        Command::DecompressDirectoryCommand cmd(m_archivePath, m_destPath);
+        cmd.setProgressCallback(progressCallback);
+        cmd.setCheckCancelCallback(cancelCallback);
+        success = cmd.execute();
+        if (!success) errorMessage = cmd.getErrorMessage();
+    }
+
+    if (m_isCancelled) {
+        emit finished(false, "已停止解压");
+    } else {
+        emit finished(success, success ? "解压完成" : QString(errorMessage.c_str()));
+    }
+}
+
 DecompressDialog::DecompressDialog(const QString& archiveName, QWidget *parent)
-    : QDialog(parent), m_archiveName(archiveName)
+    : QDialog(parent), m_archiveName(archiveName), m_workerThread(nullptr), m_worker(nullptr), m_isDecompressing(false)
 {
     setupUI();
     setupConnections();
 }
 
 DecompressDialog::~DecompressDialog() {
+    if (m_workerThread) {
+        m_workerThread->quit();
+        m_workerThread->wait();
+        delete m_workerThread;
+        m_workerThread = nullptr;
+    }
+}
+
+void DecompressDialog::setFilesToExtract(const Structure::ArrayList<Structure::String>& files) {
+    m_filesToExtract = files;
 }
 
 void DecompressDialog::setupUI() {
@@ -26,6 +74,21 @@ void DecompressDialog::setupUI() {
     
     setupHeader();
     setupSettings();
+    
+    // Progress Bar (Initially Hidden)
+    m_progressBar = new QProgressBar(this);
+    m_progressBar->setRange(0, 100);
+    m_progressBar->setValue(0);
+    m_progressBar->setTextVisible(true);
+    m_progressBar->setFixedHeight(24);
+    m_progressBar->hide();
+    m_mainLayout->addWidget(m_progressBar);
+
+    m_statusLabel = new QLabel(this);
+    m_statusLabel->setStyleSheet("color: #666666;");
+    m_statusLabel->hide();
+    m_mainLayout->addWidget(m_statusLabel);
+    
     setupBottomPanel();
     
     // Apply Styles (Consistent with NewArchiveDialog)
@@ -62,6 +125,8 @@ void DecompressDialog::setupUI() {
         "QCheckBox::indicator:checked { background: #0078D4; border-color: #0078D4; }"
         "QGroupBox { border: 1px solid #E0E0E0; border-radius: 4px; margin-top: 12px; padding-top: 24px; font-weight: bold; color: #666666; }"
         "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 5px; left: 10px; }"
+        "QProgressBar { border: 1px solid #E0E0E0; border-radius: 4px; text-align: center; background: #FAFAFA; }"
+        "QProgressBar::chunk { background-color: #0078D4; border-radius: 3px; }"
     );
     
     // 自适应大小以显示所有内容
@@ -88,8 +153,8 @@ void DecompressDialog::setupHeader() {
 }
 
 void DecompressDialog::setupSettings() {
-    QGroupBox* settingsGroup = new QGroupBox("解压选项", this);
-    QVBoxLayout* settingsLayout = new QVBoxLayout(settingsGroup);
+    m_settingsGroup = new QGroupBox("解压选项", this);
+    QVBoxLayout* settingsLayout = new QVBoxLayout(m_settingsGroup);
     settingsLayout->setSpacing(16);
     settingsLayout->setContentsMargins(16, 24, 16, 16);
     
@@ -125,7 +190,7 @@ void DecompressDialog::setupSettings() {
     settingsLayout->addWidget(m_overwriteCheck);
     settingsLayout->addStretch();
     
-    m_mainLayout->addWidget(settingsGroup, 1);
+    m_mainLayout->addWidget(m_settingsGroup, 1);
 }
 
 void DecompressDialog::setupBottomPanel() {
@@ -150,7 +215,7 @@ void DecompressDialog::setupBottomPanel() {
 void DecompressDialog::setupConnections() {
     connect(m_browseBtn, &QPushButton::clicked, this, &DecompressDialog::onBrowseDest);
     connect(m_extractBtn, &QPushButton::clicked, this, &DecompressDialog::onExtract);
-    connect(m_cancelBtn, &QPushButton::clicked, this, &DecompressDialog::reject);
+    connect(m_cancelBtn, &QPushButton::clicked, this, &DecompressDialog::onCancelClicked);
 }
 
 void DecompressDialog::onBrowseDest() {
@@ -161,8 +226,87 @@ void DecompressDialog::onBrowseDest() {
 }
 
 void DecompressDialog::onExtract() {
-    // TODO: Implement extraction logic
-    accept();
+    if (m_isDecompressing) return;
+
+    // Validate
+    QString destPath = m_destPathEdit->text();
+    if (destPath.isEmpty()) {
+        QMessageBox::warning(this, "警告", "请选择目标文件夹");
+        return;
+    }
+
+    // UI State Change
+    m_isDecompressing = true;
+    m_settingsGroup->setEnabled(false);
+    m_extractBtn->setEnabled(false);
+    m_cancelBtn->setText("停止");
+    m_progressBar->show();
+    m_statusLabel->show();
+    m_statusLabel->setText("正在准备解压...");
+
+    // Start Thread
+    m_workerThread = new QThread;
+    m_worker = new DecompressionWorker(
+        Structure::String(m_archiveName.toStdString().c_str()),
+        Structure::String(destPath.toStdString().c_str()),
+        m_filesToExtract
+    );
+    m_worker->moveToThread(m_workerThread);
+
+    connect(m_workerThread, &QThread::started, m_worker, &DecompressionWorker::process);
+    connect(m_worker, &DecompressionWorker::progressUpdated, this, &DecompressDialog::updateProgress);
+    connect(m_worker, &DecompressionWorker::finished, this, &DecompressDialog::onDecompressionFinished);
+    connect(m_worker, &DecompressionWorker::finished, m_workerThread, &QThread::quit);
+    connect(m_worker, &DecompressionWorker::finished, m_worker, &DecompressionWorker::deleteLater);
+    // connect(m_workerThread, &QThread::finished, m_workerThread, &QThread::deleteLater); // Removed to prevent double deletion/crash
+
+    m_workerThread->start();
+}
+
+void DecompressDialog::onCancelClicked() {
+    if (m_isDecompressing) {
+        if (m_worker) {
+            m_worker->stop();
+            m_statusLabel->setText("正在停止...");
+            m_cancelBtn->setEnabled(false);
+        }
+    } else {
+        reject();
+    }
+}
+
+void DecompressDialog::updateProgress(int percentage) {
+    m_progressBar->setValue(percentage);
+    m_statusLabel->setText(QString("正在解压... %1%").arg(percentage));
+}
+
+void DecompressDialog::onDecompressionFinished(bool success, QString message) {
+    m_isDecompressing = false;
+    m_settingsGroup->setEnabled(true);
+    m_extractBtn->setEnabled(true);
+    m_cancelBtn->setText("关闭");
+    m_cancelBtn->setEnabled(true);
+    m_statusLabel->setText(message);
+
+    if (success) {
+        m_progressBar->setValue(100);
+        QMessageBox::information(this, "完成", message);
+        
+        if (shouldOpenFolder()) {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(m_destPathEdit->text()));
+        }
+        accept();
+    } else {
+        if (message == "已停止解压") {
+             // Stay open or close? Usually stay open to let user try again or close.
+             // Reset UI
+             m_progressBar->hide();
+             m_statusLabel->hide();
+             m_cancelBtn->setText("取消");
+        } else {
+            QMessageBox::critical(this, "错误", message);
+        }
+    }
 }
 
 Structure::String DecompressDialog::getDestinationPath() const {

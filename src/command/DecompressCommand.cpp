@@ -89,8 +89,21 @@ void DecompressCommand::execute() {
     std::filesystem::path outDir(reinterpret_cast<const char8_t*>(m_outputDir.c_str()));
     std::filesystem::create_directories(outDir);
 
+    // 计算总大小用于进度条
+    long long totalSize = 0;
+    for (int i = 0; i < m_model->getFileCount(); ++i) {
+        totalSize += m_model->getFile(i).getCompressedSize();
+    }
+    long long processedSize = 0;
+
     IO::BitStream bitStream;
     for (int i = 0; i < m_model->getFileCount(); ++i) {
+        // 检查取消
+        if (m_checkCancelCallback && m_checkCancelCallback()) {
+            inFile.close();
+            return;
+        }
+
         Model::FileRecord& record = m_model->getFile(i);
         record.setStatus(Model::FileStatus::Processing);
         
@@ -140,6 +153,12 @@ void DecompressCommand::execute() {
         }
         
         record.setStatus(Model::FileStatus::Completed);
+
+        // 更新进度
+        processedSize += size;
+        if (m_progressCallback && totalSize > 0) {
+            m_progressCallback(static_cast<float>(processedSize) / totalSize);
+        }
     }
 
     inFile.close();
