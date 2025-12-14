@@ -44,10 +44,6 @@ private:
     
     // Menu components
     QMenu* m_fileMenu;
-    QMenu* m_editMenu;
-    QMenu* m_searchMenu;
-    QMenu* m_optionsMenu;
-    QMenu* m_viewMenu;
     QMenu* m_helpMenu;
     
     // Actions

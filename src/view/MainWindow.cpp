@@ -22,10 +22,6 @@ MainWindow::MainWindow(QWidget *parent)
       m_newButton(nullptr),
       m_archiveView(nullptr),
       m_fileMenu(nullptr),
-      m_editMenu(nullptr),
-      m_searchMenu(nullptr),
-      m_optionsMenu(nullptr),
-      m_viewMenu(nullptr),
       m_helpMenu(nullptr),
       m_newAction(nullptr),
       m_openAction(nullptr),
@@ -206,25 +202,6 @@ void MainWindow::setupMenuBar() {
     m_openAction = m_fileMenu->addAction("打开压缩文件");
     m_fileMenu->addSeparator();
     m_exitAction = m_fileMenu->addAction("退出");
-    
-    // 编辑菜单
-    m_editMenu = menuBar->addMenu("编辑(E)");
-    m_editMenu->addAction("剪切");
-    m_editMenu->addAction("复制");
-    m_editMenu->addAction("粘贴");
-    
-    // 查找菜单
-    m_searchMenu = menuBar->addMenu("查找(I)");
-    m_searchMenu->addAction("查找文件");
-    
-    // 选项菜单
-    m_optionsMenu = menuBar->addMenu("选项(O)");
-    m_optionsMenu->addAction("设置");
-    
-    // 视图菜单
-    m_viewMenu = menuBar->addMenu("视图(V)");
-    m_viewMenu->addAction("工具栏");
-    m_viewMenu->addAction("状态栏");
     
     // 帮助菜单
     m_helpMenu = menuBar->addMenu("帮助(H)");
