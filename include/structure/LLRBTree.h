@@ -102,6 +102,14 @@ private:
         collectKeys(x->right, list);
     }
 
+    // 遍历辅助函数
+    void traverse(Node* x, std::function<void(const Key&, const Value&)> callback) const {
+        if (x == nullptr) return;
+        traverse(x->left, callback);
+        callback(x->key, x->val);
+        traverse(x->right, callback);
+    }
+
 public:
     LLRBTree() : root(nullptr), m_size(0) {}
     
@@ -126,13 +134,24 @@ public:
     }
     
     // 检查是否包含键
-    bool contains(Key key) {
-        return get(key) != nullptr;
+    bool contains(Key key) const {
+        Node* x = root;
+        while (x != nullptr) {
+            if (key < x->key) x = x->left;
+            else if (key > x->key) x = x->right;
+            else return true;
+        }
+        return false;
     }
     
     // 检查树是否为空
     bool isEmpty() const {
         return root == nullptr;
+    }
+
+    // 遍历
+    void traverse(std::function<void(const Key&, const Value&)> callback) const {
+        traverse(root, callback);
     }
 
     // 获取所有键（有序）

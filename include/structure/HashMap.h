@@ -1,11 +1,12 @@
 #pragma once
 #include <functional>
 #include <cstddef>
+#include "MapHuff.h"
 
 namespace Structure {
 
     template <typename K, typename V>
-    class HashMap {
+    class HashMap : public MapHuff<K, V> {
     public:
         struct Entry {
             K first;
@@ -105,7 +106,7 @@ namespace Structure {
             return *this;
         }
 
-        void put(const K& key, const V& value) {
+        void put(const K& key, const V& value) override {
             if (m_size >= m_capacity * LOAD_FACTOR) {
                 rehash(m_capacity * 2);
             }
@@ -127,7 +128,7 @@ namespace Structure {
             m_size++;
         }
 
-        bool contains(const K& key) const {
+        bool contains(const K& key) const override {
             int index = hash(key);
             Entry* current = m_buckets[index];
             while (current) {
@@ -351,6 +352,28 @@ namespace Structure {
             return end();
         }
 
+        V* get(const K& key) override {
+            int index = hash(key);
+            Entry* current = m_buckets[index];
+            while (current) {
+                if (current->first == key) {
+                    return &(current->second);
+                }
+                current = current->next;
+            }
+            return nullptr;
+        }
+
+        void traverse(std::function<void(const K&, const V&)> callback) const override {
+            for (int i = 0; i < m_capacity; ++i) {
+                Entry* current = m_buckets[i];
+                while (current) {
+                    callback(current->first, current->second);
+                    current = current->next;
+                }
+            }
+        }
+
         void clear() {
             for (int i = 0; i < m_capacity; ++i) {
                 Entry* current = m_buckets[i];
@@ -364,7 +387,8 @@ namespace Structure {
             m_size = 0;
         }
         
-        int size() const { return m_size; }
+        int size() const override { return m_size; }
         bool empty() const { return m_size == 0; }
+        bool isEmpty() const override { return empty(); }
     };
 }

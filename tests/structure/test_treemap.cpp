@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <iostream>
 #include "structure/TreeMap.h"
+#include "structure/HashMap.h"
+#include "structure/MapHuff.h"
 #include "structure/String.h"
 
 using namespace Structure;
@@ -14,6 +16,8 @@ private slots:
     void testOperatorBracket();
     void testKeys();
     void testSize();
+    void testPolymorphism();
+    void testTraverse();
 };
 
 void TestTreeMap::testPutAndGet()
@@ -73,6 +77,44 @@ void TestTreeMap::testSize()
     
     map.put(1, 10); // Update
     QCOMPARE(map.size(), 2);
+}
+
+void TestTreeMap::testPolymorphism()
+{
+    TreeMap<int, int> treeMap;
+    HashMap<int, int> hashMap;
+    
+    MapHuff<int, int>* maps[] = { &treeMap, &hashMap };
+    
+    for (auto map : maps) {
+        map->put(1, 100);
+        QVERIFY(map->contains(1));
+        QCOMPARE(*map->get(1), 100);
+        QCOMPARE(map->size(), 1);
+        QVERIFY(!map->isEmpty());
+    }
+}
+
+void TestTreeMap::testTraverse()
+{
+    TreeMap<int, int> map;
+    map.put(1, 10);
+    map.put(2, 20);
+    map.put(3, 30);
+    
+    int count = 0;
+    int sumKeys = 0;
+    int sumValues = 0;
+    
+    map.traverse([&](const int& k, const int& v) {
+        count++;
+        sumKeys += k;
+        sumValues += v;
+    });
+    
+    QCOMPARE(count, 3);
+    QCOMPARE(sumKeys, 6);
+    QCOMPARE(sumValues, 60);
 }
 
 QTEST_APPLESS_MAIN(TestTreeMap)
