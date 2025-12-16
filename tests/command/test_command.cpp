@@ -188,6 +188,16 @@ private slots:
         {
             std::ifstream ifs(outputFile, std::ios::binary);
             ifs.read(magic, 4);
+            
+            // Read encryption flag
+            unsigned char flag;
+            ifs.read(reinterpret_cast<char*>(&flag), 1);
+            
+            // Skip salt and hash if encrypted
+            if (flag & 0x01) {
+                ifs.seekg(8 + 16, std::ios::cur); // SALT_SIZE + HASH_SIZE
+            }
+            
             // Skip frequency table size
             int mapSize;
             ifs.read(reinterpret_cast<char*>(&mapSize), sizeof(int));
