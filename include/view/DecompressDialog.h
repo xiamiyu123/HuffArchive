@@ -26,6 +26,7 @@ public:
     }
 
     void stop() { m_isCancelled = true; }
+    void setUseTreeMap(bool use) { m_useTreeMap = use; }
 
 public slots:
     void process();
@@ -39,6 +40,7 @@ private:
     Structure::String m_destPath;
     Structure::ArrayList<Structure::String> m_filesToExtract;
     bool m_isSelective;
+    bool m_useTreeMap = false;
     std::atomic<bool> m_isCancelled{false};
 };
 
@@ -85,6 +87,7 @@ private:
     QPushButton* m_browseBtn;
     QCheckBox* m_openFolderCheck;
     QCheckBox* m_overwriteCheck;
+    QCheckBox* m_useTreeMapCheck; // 新增：使用 TreeMap 选项
     
     // Progress
     QProgressBar* m_progressBar;
