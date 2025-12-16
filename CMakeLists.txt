@@ -5,6 +5,16 @@ project(Huffman LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 选项：使用 TreeMap 替代 HashMap
+option(USE_TREEMAP "Use TreeMap instead of HashMap for Huffman Tree construction" OFF)
+
+if(USE_TREEMAP)
+    add_compile_definitions(USE_TREEMAP)
+    message(STATUS "Using TreeMap for Huffman Tree construction")
+else()
+    message(STATUS "Using HashMap for Huffman Tree construction")
+endif()
+
 # 启用 Qt 自动化工具
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)

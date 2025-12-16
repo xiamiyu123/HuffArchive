@@ -3,6 +3,10 @@
 #include "HuffmanNode.h"
 #include "ArrayList.h"
 #include "HashMap.h"
+#ifdef USE_TREEMAP
+#include "TreeMap.h"
+#endif
+#include "MapHuff.h"
 #include "PriorityQueue.h"
 #include "String.h"
 #include <functional>
@@ -15,10 +19,14 @@ public:
     ~HuffmanTree();
 
     // 构建哈夫曼树
-    void build(const HashMap<unsigned char, int>& frequencyMap);
+    void build(const MapHuff<unsigned char, int>& frequencyMap);
 
     // 生成哈夫曼编码表
+#ifdef USE_TREEMAP
+    TreeMap<unsigned char, String> generateCodes();
+#else
     HashMap<unsigned char, String> generateCodes();
+#endif
 
     // 编码：将字节数组编码为 01 字符串
     String encode(const ArrayList<unsigned char>& data);

@@ -27,7 +27,7 @@ public:
 
     // 检查是否包含键
     bool contains(const Key& key) const override {
-        return tree.contains(key);
+        return const_cast<LLRBTree<Key, Value>&>(tree).contains(key);
     }
 
     // 获取大小
@@ -42,7 +42,23 @@ public:
 
     // 遍历
     void traverse(std::function<void(const Key&, const Value&)> callback) const override {
-        tree.traverse(callback);
+        // Use iterator to traverse
+        auto& nonConstTree = const_cast<LLRBTree<Key, Value>&>(tree);
+        for (auto it = nonConstTree.begin(); it != nonConstTree.end(); ++it) {
+            auto entry = *it;
+            callback(entry.first, entry.second);
+        }
+    }
+
+    // 迭代器支持
+    using Iterator = typename LLRBTree<Key, Value>::Iterator;
+    
+    Iterator begin() {
+        return tree.begin();
+    }
+    
+    Iterator end() {
+        return tree.end();
     }
 
     // 获取所有键（有序）
