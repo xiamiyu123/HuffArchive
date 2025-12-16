@@ -11,6 +11,7 @@
 #include <QAction>
 #include <QFileDialog>
 #include <QStackedWidget>
+#include <QToolButton>
 
 namespace View {
 
@@ -29,6 +30,7 @@ private:
     void setupConnections();
     void showWelcomeScreen();
     void showArchiveView(const QString& archivePath);
+    void updateHistoryUI();
     
     // UI Components
     QStackedWidget* m_stackedWidget;
@@ -37,8 +39,9 @@ private:
     QVBoxLayout* m_mainLayout;
     QHBoxLayout* m_buttonLayout;
     
-    QPushButton* m_openButton;
+    QToolButton* m_openButton;
     QPushButton* m_newButton;
+    QMenu* m_historyMenu;
     
     ArchiveView* m_archiveView;
     
@@ -54,6 +57,7 @@ private:
 private slots:
     void onOpenArchive();
     void onNewArchive();
+    void onHistoryActionTriggered();
 };
 
 }

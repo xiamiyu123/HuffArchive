@@ -2,6 +2,7 @@
 #include "view/ArchiveView.h"
 #include "view/NewArchiveDialog.h"
 #include "command/CompressDirectoryCommand.h"
+#include "model/HistoryManager.h"
 #include <QIcon>
 #include <QFont>
 #include <QSize>
@@ -20,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_buttonLayout(nullptr),
       m_openButton(nullptr),
       m_newButton(nullptr),
+      m_historyMenu(nullptr),
       m_archiveView(nullptr),
       m_fileMenu(nullptr),
       m_helpMenu(nullptr),
@@ -71,15 +73,17 @@ void MainWindow::showWelcomeScreen() {
     m_buttonLayout->setSpacing(30);
     
     // 创建"打开压缩文件"按钮
-    m_openButton = new QPushButton(this);
+    m_openButton = new QToolButton(this);
     m_openButton->setText("打开压缩文件");
     m_openButton->setMinimumSize(200, 120);
     m_openButton->setMaximumSize(250, 150);
     m_openButton->setCursor(Qt::PointingHandCursor);
+    m_openButton->setPopupMode(QToolButton::MenuButtonPopup);
+    m_openButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     
     // 设置按钮样式
     m_openButton->setStyleSheet(
-        "QPushButton {"
+        "QToolButton {"
         "   background-color: white;"
         "   border: 2px solid #E0E0E0;"
         "   border-radius: 8px;"
@@ -87,14 +91,28 @@ void MainWindow::showWelcomeScreen() {
         "   font-weight: bold;"
         "   padding: 20px;"
         "}"
-        "QPushButton:hover {"
+        "QToolButton:hover {"
         "   background-color: #F5F5F5;"
         "   border-color: #1890FF;"
         "}"
-        "QPushButton:pressed {"
+        "QToolButton:pressed {"
         "   background-color: #E8E8E8;"
         "}"
+        "QToolButton::menu-button {"
+        "   border-left: 1px solid #E0E0E0;"
+        "   border-top-right-radius: 8px;"
+        "   border-bottom-right-radius: 8px;"
+        "   width: 30px;"
+        "}"
+        "QToolButton::menu-button:hover {"
+        "   background-color: #E3F2FD;"
+        "}"
     );
+
+    // 创建历史记录菜单
+    m_historyMenu = new QMenu(this);
+    m_openButton->setMenu(m_historyMenu);
+    updateHistoryUI();
     
     // 创建"新建压缩文件"按钮
     m_newButton = new QPushButton(this);
@@ -143,6 +161,10 @@ void MainWindow::showWelcomeScreen() {
 }
 
 void MainWindow::showArchiveView(const QString& archivePath) {
+    // 添加到历史记录
+    Model::HistoryManager::instance().addHistory(Structure::String(archivePath.toUtf8().constData()));
+    updateHistoryUI();
+
     // 如果已有 ArchiveView，先移除
     if (m_archiveView) {
         m_stackedWidget->removeWidget(m_archiveView);
@@ -246,6 +268,37 @@ void MainWindow::onNewArchive() {
         if (QFileInfo::exists(qArchivePath)) {
             showArchiveView(qArchivePath);
         }
+    }
+}
+
+void MainWindow::updateHistoryUI() {
+    if (!m_historyMenu) return;
+    
+    m_historyMenu->clear();
+    
+    auto history = Model::HistoryManager::instance().getHistory();
+    if (history.size() == 0) {
+        QAction* action = m_historyMenu->addAction("无历史记录");
+        action->setEnabled(false);
+        return;
+    }
+
+    for (int i = 0; i < history.size(); ++i) {
+        QString path = QString::fromUtf8(history[i].c_str());
+        QAction* action = m_historyMenu->addAction(path);
+        connect(action, &QAction::triggered, this, &MainWindow::onHistoryActionTriggered);
+    }
+}
+
+void MainWindow::onHistoryActionTriggered() {
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) return;
+    
+    QString path = action->text();
+    if (!path.isEmpty() && QFileInfo::exists(path)) {
+        showArchiveView(path);
+    } else if (!path.isEmpty()) {
+        QMessageBox::warning(this, "错误", "文件不存在或已被移动");
     }
 }
 
