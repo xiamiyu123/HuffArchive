@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     // 清理临时目录
     std::error_code ec;
-    std::filesystem::path tempDir = std::filesystem::current_path() / "tmp";
+    std::filesystem::path tempDir = std::filesystem::current_path() / "data" / "tmp";
     if (std::filesystem::exists(tempDir)) {
         std::filesystem::remove_all(tempDir, ec);
     }

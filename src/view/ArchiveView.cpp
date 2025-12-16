@@ -351,7 +351,7 @@ void ArchiveView::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
 
 void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
     // 1. 准备临时目录
-    std::filesystem::path tempDir = std::filesystem::current_path() / "tmp";
+    std::filesystem::path tempDir = std::filesystem::current_path() / "data" / "tmp";
     std::error_code ec;
     std::filesystem::create_directories(tempDir, ec);
     
