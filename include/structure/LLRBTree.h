@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ArrayList.h"
+#include <stack>
 
 namespace Structure {
 
@@ -159,6 +160,80 @@ public:
         ArrayList<Key> list;
         collectKeys(root, list);
         return list;
+    }
+
+    // 迭代器定义
+    class Iterator {
+    private:
+        std::stack<Node*> stack;
+        Node* current;
+
+        void pushLeft(Node* x) {
+            while (x != nullptr) {
+                stack.push(x);
+                x = x->left;
+            }
+        }
+
+    public:
+        Iterator(Node* root) : current(nullptr) {
+            pushLeft(root);
+            if (!stack.empty()) {
+                current = stack.top();
+                stack.pop();
+            }
+        }
+
+        // 结束迭代器
+        Iterator() : current(nullptr) {}
+
+        bool operator!=(const Iterator& other) const {
+            return current != other.current || !stack.empty() != !other.stack.empty(); 
+            // 简化逻辑：只要 current 不同就是不同。对于 end()，current 是 nullptr 且 stack 为空。
+            // 但为了严谨，如果两个迭代器都指向同一个非空节点，且 stack 状态不同（不可能发生于同一棵树的遍历），也算不同？
+            // 通常只比较 current 即可，除非是 end iterator。
+            // 修正：
+            if (current == nullptr && other.current == nullptr) return false; // 都是 end
+            return current != other.current;
+        }
+
+        // 解引用返回 Key-Value 对的引用是不行的，因为 Node 分开了 Key 和 Value。
+        // 为了模仿 HashMap::Entry，我们可以返回一个临时对象或者 pair。
+        // 但 HashMap::Iterator 返回 Entry&。
+        // 这里我们定义一个 Entry 结构体或者直接返回 Node& (但不安全)。
+        // 让我们在 LLRBTree 中定义一个 Entry 结构体用于迭代器返回。
+        
+        struct Entry {
+            const Key& first;
+            Value& second;
+            Entry(const Key& k, Value& v) : first(k), second(v) {}
+        };
+
+        Entry operator*() {
+            return Entry(current->key, current->val);
+        }
+
+        Iterator& operator++() {
+            if (current == nullptr) return *this;
+
+            pushLeft(current->right);
+            
+            if (!stack.empty()) {
+                current = stack.top();
+                stack.pop();
+            } else {
+                current = nullptr;
+            }
+            return *this;
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(root);
+    }
+
+    Iterator end() {
+        return Iterator();
     }
 };
 

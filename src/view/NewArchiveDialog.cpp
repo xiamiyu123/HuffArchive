@@ -208,6 +208,14 @@ void NewArchiveDialog::setupBottomPanel() {
     pathLayout->addWidget(m_browseBtn);
     
     settingsLayout->addLayout(pathLayout);
+
+    // 压缩选项
+    QHBoxLayout* optionsLayout = new QHBoxLayout();
+    m_useTreeMapCheck = new QCheckBox("使用 TreeMap (红黑树) 构建哈夫曼树", this);
+    m_useTreeMapCheck->setToolTip("勾选后将使用 TreeMap 替代 HashMap 进行频率统计");
+    optionsLayout->addWidget(m_useTreeMapCheck);
+    optionsLayout->addStretch();
+    settingsLayout->addLayout(optionsLayout);
     
     // 底部按钮
     QHBoxLayout* actionLayout = new QHBoxLayout();
@@ -468,6 +476,10 @@ Structure::String NewArchiveDialog::getArchivePath() const {
 
 Structure::ArrayList<Structure::String> NewArchiveDialog::getFilesToCompress() const {
     return m_selectedFiles;
+}
+
+bool NewArchiveDialog::useTreeMap() const {
+    return m_useTreeMapCheck->isChecked();
 }
 
 }

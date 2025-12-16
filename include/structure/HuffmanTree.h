@@ -3,6 +3,7 @@
 #include "HuffmanNode.h"
 #include "ArrayList.h"
 #include "HashMap.h"
+#include "MapHuff.h"
 #include "PriorityQueue.h"
 #include "String.h"
 #include <functional>
@@ -15,7 +16,7 @@ public:
     ~HuffmanTree();
 
     // 构建哈夫曼树
-    void build(const HashMap<unsigned char, int>& frequencyMap);
+    void build(const MapHuff<unsigned char, int>& frequencyMap);
 
     // 生成哈夫曼编码表
     HashMap<unsigned char, String> generateCodes();

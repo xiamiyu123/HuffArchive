@@ -186,8 +186,12 @@ void DecompressDialog::setupSettings() {
     
     m_overwriteCheck = new QCheckBox("覆盖已存在的文件", this);
     
+    m_useTreeMapCheck = new QCheckBox("使用 TreeMap (红黑树) 重建哈夫曼树", this);
+    m_useTreeMapCheck->setToolTip("勾选后将使用 TreeMap 替代 HashMap 进行频率统计与树构建");
+
     settingsLayout->addWidget(m_openFolderCheck);
     settingsLayout->addWidget(m_overwriteCheck);
+    settingsLayout->addWidget(m_useTreeMapCheck);
     settingsLayout->addStretch();
     
     m_mainLayout->addWidget(m_settingsGroup, 1);
@@ -251,6 +255,7 @@ void DecompressDialog::onExtract() {
         Structure::String(destPath.toStdString().c_str()),
         m_filesToExtract
     );
+    m_worker->setUseTreeMap(m_useTreeMapCheck->isChecked());
     m_worker->moveToThread(m_workerThread);
 
     connect(m_workerThread, &QThread::started, m_worker, &DecompressionWorker::process);

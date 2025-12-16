@@ -25,6 +25,7 @@ public:
 
     Structure::String getArchivePath() const;
     Structure::ArrayList<Structure::String> getFilesToCompress() const;
+    bool useTreeMap() const;
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -56,6 +57,7 @@ private:
     QLineEdit* m_destPathEdit;
     QPushButton* m_browseBtn;
     QComboBox* m_compressionLevelCombo;
+    QCheckBox* m_useTreeMapCheck; // 新增：使用 TreeMap 选项
     
     // Bottom
     QPushButton* m_compressBtn;

@@ -13,11 +13,11 @@ HuffmanTree::HuffmanTree() : m_root(-1) {
 HuffmanTree::~HuffmanTree() {
 }
 
-void HuffmanTree::build(const HashMap<unsigned char, int>& frequencyMap) {
+void HuffmanTree::build(const MapHuff<unsigned char, int>& frequencyMap) {
     m_nodes.clear();
     m_root = -1;
 
-    if (frequencyMap.empty()) {
+    if (frequencyMap.isEmpty()) {
         return;
     }
 
@@ -27,14 +27,14 @@ void HuffmanTree::build(const HashMap<unsigned char, int>& frequencyMap) {
 
     // 1. 初始化叶子节点
     int i = 0;
-    for (const auto& pair : frequencyMap) {
-        m_nodes[i].data = pair.first;
-        m_nodes[i].weight = pair.second;
+    frequencyMap.traverse([&](const unsigned char& key, const int& value) {
+        m_nodes[i].data = key;
+        m_nodes[i].weight = value;
         m_nodes[i].parent = -1;
         m_nodes[i].lchild = -1;
         m_nodes[i].rchild = -1;
         i++;
-    }
+    });
 
     // Sort leaf nodes by data to ensure deterministic tree construction
     // This is crucial because HashMap iteration order might vary, leading to different
