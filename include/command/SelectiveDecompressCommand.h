@@ -3,6 +3,7 @@
 #include "structure/String.h"
 #include "structure/ArrayList.h"
 #include <functional>
+#include <string>
 
 namespace Command {
 
@@ -42,7 +43,8 @@ public:
      */
     SelectiveDecompressCommand(const Structure::String& inputPath,
                               const Structure::String& outputDir,
-                              const Structure::ArrayList<Structure::String>& fileFilter);
+                              const Structure::ArrayList<Structure::String>& fileFilter,
+                              const std::string& password = "");
     ~SelectiveDecompressCommand();
 
     /**
@@ -73,6 +75,7 @@ private:
     Structure::String m_inputPath;
     Structure::String m_outputDir;
     Structure::ArrayList<Structure::String> m_fileFilter;
+    std::string m_password;
     Structure::String m_errorMessage;
     int m_extractedCount;
     int m_skippedCount;

@@ -19,10 +19,12 @@ public:
 
     void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }
     void setCheckCancelCallback(CheckCancelCallback cb) { m_checkCancelCallback = cb; }
+    void setPassword(const Structure::String& password) { m_password = password; }
 
 private:
     Model::DataModel* m_model;
     Structure::String m_outputPath;
+    Structure::String m_password;
     ProgressCallback m_progressCallback;
     CheckCancelCallback m_checkCancelCallback;
 };

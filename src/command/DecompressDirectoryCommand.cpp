@@ -8,8 +8,9 @@ namespace fs = std::filesystem;
 namespace Command {
 
 DecompressDirectoryCommand::DecompressDirectoryCommand(const Structure::String& inputPath,
-                                                       const Structure::String& outputDir)
-    : m_inputPath(inputPath), m_outputDir(outputDir) {
+                                                       const Structure::String& outputDir,
+                                                       const std::string& password)
+    : m_inputPath(inputPath), m_outputDir(outputDir), m_password(password) {
 }
 
 DecompressDirectoryCommand::~DecompressDirectoryCommand() {
@@ -39,7 +40,7 @@ bool DecompressDirectoryCommand::execute() {
 
         // 4. 调用底层解压命令
         // DecompressCommand 会自动从归档文件中读取并恢复目录结构
-        DecompressCommand decompressCmd(&model, m_inputPath, m_outputDir);
+        DecompressCommand decompressCmd(&model, m_inputPath, m_outputDir, m_password);
         decompressCmd.setProgressCallback(m_progressCallback);
         decompressCmd.setCheckCancelCallback(m_checkCancelCallback);
         decompressCmd.execute();

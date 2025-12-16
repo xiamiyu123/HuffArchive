@@ -2,14 +2,16 @@
 #include "structure/HuffmanTree.h"
 #include "io/FileHandler.h"
 #include "io/BitStream.h"
+#include "util/CryptoUtils.h"
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <vector>
 
 namespace Command {
 
-DecompressCommand::DecompressCommand(Model::DataModel* model, const Structure::String& inputPath, const Structure::String& outputDir)
-    : m_model(model), m_inputPath(inputPath), m_outputDir(outputDir) {
+DecompressCommand::DecompressCommand(Model::DataModel* model, const Structure::String& inputPath, const Structure::String& outputDir, const std::string& password)
+    : m_model(model), m_inputPath(inputPath), m_outputDir(outputDir), m_password(password) {
 }
 
 DecompressCommand::~DecompressCommand() {
@@ -34,16 +36,55 @@ void DecompressCommand::execute() {
         return;
     }
 
+    // 读取 Flag
+    char flag = 0;
+    inFile.read(&flag, 1);
+    bool isEncrypted = (flag & 0x01);
+
+    Util::CryptoUtils::StreamCipher* cipher = nullptr;
+
+    if (isEncrypted) {
+        char salt[8];
+        inFile.read(salt, 8);
+        
+        char fileHash[16];
+        inFile.read(fileHash, 16);
+
+        if (m_password.empty()) {
+            std::cerr << "Password required" << std::endl;
+            return; // 或者抛出异常/回调通知
+        }
+
+        // 验证密码
+        unsigned char computedHash[16];
+        Util::CryptoUtils::hashPassword(m_password, reinterpret_cast<const unsigned char*>(salt), computedHash);
+        
+        if (memcmp(fileHash, computedHash, 16) != 0) {
+            std::cerr << "Invalid password" << std::endl;
+            return; // 或者抛出异常/回调通知
+        }
+
+        // 初始化 Cipher
+        cipher = new Util::CryptoUtils::StreamCipher(m_password, reinterpret_cast<const unsigned char*>(salt));
+    }
+
+    auto readEncrypted = [&](char* buf, size_t size) {
+        inFile.read(buf, size);
+        if (cipher) {
+            cipher->process(buf, size);
+        }
+    };
+
     // 2. 读取频率表
     int mapSize = 0;
-    inFile.read(reinterpret_cast<char*>(&mapSize), sizeof(int));
+    readEncrypted(reinterpret_cast<char*>(&mapSize), sizeof(int));
     
     Structure::HashMap<unsigned char, int> freqMap;
     for (int i = 0; i < mapSize; ++i) {
         unsigned char c;
         int f;
-        inFile.read(reinterpret_cast<char*>(&c), 1);
-        inFile.read(reinterpret_cast<char*>(&f), sizeof(int));
+        readEncrypted(reinterpret_cast<char*>(&c), 1);
+        readEncrypted(reinterpret_cast<char*>(&f), sizeof(int));
         freqMap.put(c, f);
     }
 
@@ -53,27 +94,25 @@ void DecompressCommand::execute() {
 
     // 4. 读取文件数量
     int fileCount = 0;
-    inFile.read(reinterpret_cast<char*>(&fileCount), sizeof(int));
+    readEncrypted(reinterpret_cast<char*>(&fileCount), sizeof(int));
 
     // 5. 读取目录并填充 DataModel
     for (int i = 0; i < fileCount; ++i) {
         int pathLen = 0;
-        inFile.read(reinterpret_cast<char*>(&pathLen), sizeof(int));
+        readEncrypted(reinterpret_cast<char*>(&pathLen), sizeof(int));
         
         char* pathBuf = new char[pathLen + 1];
-        inFile.read(pathBuf, pathLen);
+        readEncrypted(pathBuf, pathLen);
         pathBuf[pathLen] = '\0';
         Structure::String relPath(pathBuf);
         delete[] pathBuf;
         
         long long origSize, compSize, offset;
-        inFile.read(reinterpret_cast<char*>(&origSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&compSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&offset), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&origSize), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&compSize), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&offset), sizeof(long long));
         
         // 创建 FileRecord
-        // 注意：这里我们没有源文件的绝对路径，只有相对路径
-        // 我们构造一个 FileRecord，主要用于解压
         Model::FileRecord record("", Model::FileType::File);
         record.setRelativePath(relPath);
         record.setOriginalSize(origSize);
@@ -101,14 +140,25 @@ void DecompressCommand::execute() {
         // 检查取消
         if (m_checkCancelCallback && m_checkCancelCallback()) {
             inFile.close();
+            if (cipher) delete cipher;
             return;
         }
 
         Model::FileRecord& record = m_model->getFile(i);
         record.setStatus(Model::FileStatus::Processing);
         
-        // 跳转到数据位置
-        inFile.seekg(record.getOffset());
+        // 验证偏移量 (对于加密流，必须顺序读取)
+        if (inFile.tellg() != record.getOffset()) {
+             // 如果不匹配，说明逻辑有误或者文件损坏
+             // 对于非加密文件，可以 seekg。对于加密文件，必须刚好在这里。
+             if (!cipher) {
+                 inFile.seekg(record.getOffset());
+             } else {
+                 // 如果有偏差，尝试跳过（虽然理论上不应该发生）
+                 // 或者报错
+                 // std::cerr << "Stream sync error" << std::endl;
+             }
+        }
         
         // 读取压缩数据
         long long size = record.getCompressedSize();
@@ -116,7 +166,7 @@ void DecompressCommand::execute() {
         if (size > 0) {
             Structure::ArrayList<unsigned char> buffer;
             char* tempBuf = new char[size];
-            inFile.read(tempBuf, size);
+            readEncrypted(tempBuf, size);
             
             for(long long k=0; k<size; ++k) {
                 buffer.add(static_cast<unsigned char>(tempBuf[k]));
@@ -161,6 +211,7 @@ void DecompressCommand::execute() {
         }
     }
 
+    if (cipher) delete cipher;
     inFile.close();
 }
 

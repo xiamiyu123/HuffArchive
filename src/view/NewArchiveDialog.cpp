@@ -17,14 +17,17 @@ namespace View {
 class CompressionWorker : public QObject {
     Q_OBJECT
 public:
-    CompressionWorker(const Structure::ArrayList<Structure::String>& files, const Structure::String& output)
-        : m_files(files), m_output(output), m_isCancelled(false) {}
+    CompressionWorker(const Structure::ArrayList<Structure::String>& files, const Structure::String& output, const Structure::String& password = "")
+        : m_files(files), m_output(output), m_password(password), m_isCancelled(false) {}
 
     void cancel() { m_isCancelled = true; }
 
 public slots:
     void process() {
         Command::CompressMultipleSourcesCommand cmd(m_files, m_output);
+        if (!m_password.empty()) {
+            cmd.setPassword(m_password);
+        }
         
         cmd.setProgressCallback([this](float p, const std::string& msg) {
             emit progress(static_cast<int>(p * 100), QString::fromStdString(msg));
@@ -45,6 +48,7 @@ signals:
 private:
     Structure::ArrayList<Structure::String> m_files;
     Structure::String m_output;
+    Structure::String m_password;
     std::atomic<bool> m_isCancelled;
 };
 
@@ -216,6 +220,23 @@ void NewArchiveDialog::setupBottomPanel() {
     optionsLayout->addWidget(m_useTreeMapCheck);
     optionsLayout->addStretch();
     settingsLayout->addLayout(optionsLayout);
+
+    // 密码选项
+    QHBoxLayout* passwordLayout = new QHBoxLayout();
+    QLabel* passwordLabel = new QLabel("密码(可选):", this);
+    m_passwordEdit = new QLineEdit(this);
+    m_passwordEdit->setPlaceholderText("留空则不加密");
+    m_passwordEdit->setEchoMode(QLineEdit::Password);
+    
+    m_showPasswordCheck = new QCheckBox("显示密码", this);
+    connect(m_showPasswordCheck, &QCheckBox::toggled, [this](bool checked) {
+        m_passwordEdit->setEchoMode(checked ? QLineEdit::Normal : QLineEdit::Password);
+    });
+
+    passwordLayout->addWidget(passwordLabel);
+    passwordLayout->addWidget(m_passwordEdit);
+    passwordLayout->addWidget(m_showPasswordCheck);
+    settingsLayout->addLayout(passwordLayout);
     
     // 底部按钮
     QHBoxLayout* actionLayout = new QHBoxLayout();
@@ -382,6 +403,7 @@ void NewArchiveDialog::onCompress() {
     }
     
     Structure::String outputPath(destPath.toStdString().c_str());
+    Structure::String password(m_passwordEdit->text().toStdString().c_str());
     
     // 更新 UI 状态
     m_isCompressing = true;
@@ -394,6 +416,8 @@ void NewArchiveDialog::onCompress() {
     m_clearBtn->setEnabled(false);
     m_destPathEdit->setEnabled(false);
     m_browseBtn->setEnabled(false);
+    m_passwordEdit->setEnabled(false);
+    m_showPasswordCheck->setEnabled(false);
     
     m_progressBar->setValue(0);
     m_progressBar->setVisible(true);
@@ -402,7 +426,7 @@ void NewArchiveDialog::onCompress() {
     
     // 创建线程和 Worker
     QThread* thread = new QThread;
-    m_worker = new CompressionWorker(m_selectedFiles, outputPath);
+    m_worker = new CompressionWorker(m_selectedFiles, outputPath, password);
     m_worker->moveToThread(thread);
     
     // 连接信号槽
@@ -453,6 +477,8 @@ void NewArchiveDialog::onCompressionFinished(bool success, QString msg) {
     m_clearBtn->setEnabled(true);
     m_destPathEdit->setEnabled(true);
     m_browseBtn->setEnabled(true);
+    m_passwordEdit->setEnabled(true);
+    m_showPasswordCheck->setEnabled(true);
     
     m_progressBar->setVisible(false);
     m_statusLabel->setVisible(false);

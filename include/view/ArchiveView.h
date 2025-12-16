@@ -29,6 +29,7 @@ private:
     void setupConnections();
     
     Structure::String m_archivePath;
+    std::string m_password;
     
     // UI Components
     QVBoxLayout* m_mainLayout;

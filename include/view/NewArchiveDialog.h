@@ -58,6 +58,8 @@ private:
     QPushButton* m_browseBtn;
     QComboBox* m_compressionLevelCombo;
     QCheckBox* m_useTreeMapCheck; // 新增：使用 TreeMap 选项
+    QLineEdit* m_passwordEdit;    // 新增：密码输入框
+    QCheckBox* m_showPasswordCheck; // 新增：显示密码选项
     
     // Bottom
     QPushButton* m_compressBtn;

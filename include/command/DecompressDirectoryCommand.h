@@ -25,7 +25,8 @@ public:
      * @param outputDir 解压输出目录
      */
     DecompressDirectoryCommand(const Structure::String& inputPath,
-                              const Structure::String& outputDir);
+                              const Structure::String& outputDir,
+                              const std::string& password = "");
     ~DecompressDirectoryCommand();
 
     /**
@@ -45,6 +46,7 @@ public:
 private:
     Structure::String m_inputPath;
     Structure::String m_outputDir;
+    std::string m_password;
     Structure::String m_errorMessage;
     std::function<void(float)> m_progressCallback;
     std::function<bool()> m_checkCancelCallback;

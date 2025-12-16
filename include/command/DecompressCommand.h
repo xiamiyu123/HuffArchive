@@ -7,7 +7,7 @@ namespace Command {
 
 class DecompressCommand {
 public:
-    DecompressCommand(Model::DataModel* model, const Structure::String& inputPath, const Structure::String& outputDir);
+    DecompressCommand(Model::DataModel* model, const Structure::String& inputPath, const Structure::String& outputDir, const std::string& password = "");
     ~DecompressCommand();
 
     // Execute decompression
@@ -20,6 +20,7 @@ private:
     Model::DataModel* m_model;
     Structure::String m_inputPath;
     Structure::String m_outputDir;
+    std::string m_password;
     std::function<void(float)> m_progressCallback;
     std::function<bool()> m_checkCancelCallback;
 };

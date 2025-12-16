@@ -44,11 +44,6 @@ public:
     bool execute();
 
     /**
-     * @brief 获取错误信息
-     */
-    Structure::String getErrorMessage() const;
-
-    /**
      * @brief 获取数据模型（用于查看进度等）
      */
     const Model::DataModel& getModel() const;
@@ -58,11 +53,14 @@ public:
     
     void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }
     void setCheckCancelCallback(CheckCancelCallback cb) { m_checkCancelCallback = cb; }
+    void setPassword(const Structure::String& password) { m_password = password; }
+    Structure::String getErrorMessage() const;
 
 private:
     Structure::ArrayList<Structure::String> m_sourcePaths;
     Structure::String m_outputPath;
     Structure::String m_errorMessage;
+    Structure::String m_password;
     Model::DataModel m_model;
     ProgressCallback m_progressCallback;
     CheckCancelCallback m_checkCancelCallback;

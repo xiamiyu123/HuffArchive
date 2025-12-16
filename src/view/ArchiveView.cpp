@@ -4,6 +4,7 @@
 #include "command/SelectiveDecompressCommand.h"
 #include "command/AddFileCommand.h"
 #include "view/ArchivePropertiesDialog.h"
+#include "util/CryptoUtils.h"
 #include <QIcon>
 #include <QFileInfo>
 #include <QDateTime>
@@ -19,6 +20,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
 #include <QApplication>
+#include <QInputDialog>
 
 namespace View {
 
@@ -192,20 +194,69 @@ void ArchiveView::loadArchive() {
         inFile.close();
         return;
     }
+
+    // 读取 Flag
+    char flag = 0;
+    inFile.read(&flag, 1);
+    bool isEncrypted = (flag & 0x01);
+
+    Util::CryptoUtils::StreamCipher* cipher = nullptr;
+
+    if (isEncrypted) {
+        char salt[8];
+        inFile.read(salt, 8);
+        
+        char fileHash[16];
+        inFile.read(fileHash, 16);
+
+        bool ok;
+        QString password = QInputDialog::getText(this, "输入密码",
+                                             "该文件已加密，请输入密码：", QLineEdit::Password,
+                                             "", &ok);
+        if (!ok || password.isEmpty()) {
+            m_statusLabel->setText("已取消或密码为空");
+            inFile.close();
+            return;
+        }
+
+        // 验证密码
+        unsigned char computedHash[16];
+        Util::CryptoUtils::hashPassword(password.toStdString(), reinterpret_cast<const unsigned char*>(salt), computedHash);
+        
+        if (memcmp(fileHash, computedHash, 16) != 0) {
+            QMessageBox::critical(this, "错误", "密码错误！");
+            m_statusLabel->setText("密码错误");
+            inFile.close();
+            return;
+        }
+
+        // 初始化 Cipher
+        cipher = new Util::CryptoUtils::StreamCipher(password.toStdString(), reinterpret_cast<const unsigned char*>(salt));
+        
+        // 保存密码供后续解压使用
+        m_password = password.toStdString();
+    }
+
+    auto readEncrypted = [&](char* buf, size_t size) {
+        inFile.read(buf, size);
+        if (cipher) {
+            cipher->process(buf, size);
+        }
+    };
     
     // 读取频率表大小并跳过
     int mapSize;
-    inFile.read(reinterpret_cast<char*>(&mapSize), sizeof(int));
+    readEncrypted(reinterpret_cast<char*>(&mapSize), sizeof(int));
     for (int i = 0; i < mapSize; ++i) {
         unsigned char c;
         int f;
-        inFile.read(reinterpret_cast<char*>(&c), 1);
-        inFile.read(reinterpret_cast<char*>(&f), sizeof(int));
+        readEncrypted(reinterpret_cast<char*>(&c), 1);
+        readEncrypted(reinterpret_cast<char*>(&f), sizeof(int));
     }
     
     // 读取文件数量
     int fileCount;
-    inFile.read(reinterpret_cast<char*>(&fileCount), sizeof(int));
+    readEncrypted(reinterpret_cast<char*>(&fileCount), sizeof(int));
     
     // 读取文件列表
     long long totalOriginalSize = 0;
@@ -214,19 +265,19 @@ void ArchiveView::loadArchive() {
     for (int i = 0; i < fileCount; ++i) {
         // 读取路径长度
         int pathLen;
-        inFile.read(reinterpret_cast<char*>(&pathLen), sizeof(int));
+        readEncrypted(reinterpret_cast<char*>(&pathLen), sizeof(int));
         
         // 读取路径
         std::vector<char> pathBuf(pathLen + 1);
-        inFile.read(pathBuf.data(), pathLen);
+        readEncrypted(pathBuf.data(), pathLen);
         pathBuf[pathLen] = '\0';
         QString path = QString::fromUtf8(pathBuf.data());
         
         // 读取大小信息
         long long originalSize, compressedSize, offset;
-        inFile.read(reinterpret_cast<char*>(&originalSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&compressedSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&offset), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&originalSize), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&compressedSize), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&offset), sizeof(long long));
         
         totalOriginalSize += originalSize;
         totalCompressedSize += compressedSize;
@@ -240,6 +291,7 @@ void ArchiveView::loadArchive() {
         item->setText(3, "-");
     }
     
+    if (cipher) delete cipher;
     inFile.close();
     
     // 更新状态栏
@@ -253,6 +305,7 @@ void ArchiveView::loadArchive() {
 void ArchiveView::onExtract() {
     QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
     DecompressDialog dialog(qArchivePath, this);
+    dialog.setPassword(m_password);
     
     dialog.exec();
     // Dialog handles execution and success message now
@@ -277,6 +330,7 @@ void ArchiveView::onExtractSelected() {
     QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
     DecompressDialog dialog(qArchivePath, this);
     dialog.setFilesToExtract(filesToExtract);
+    dialog.setPassword(m_password);
     
     dialog.exec();
     // Dialog handles execution and success message now

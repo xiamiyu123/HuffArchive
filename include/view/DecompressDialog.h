@@ -20,8 +20,9 @@ class DecompressionWorker : public QObject {
 public:
     DecompressionWorker(const Structure::String& archivePath, 
                         const Structure::String& destPath,
+                        const std::string& password = "",
                         const Structure::ArrayList<Structure::String>& filesToExtract = Structure::ArrayList<Structure::String>())
-        : m_archivePath(archivePath), m_destPath(destPath), m_filesToExtract(filesToExtract) {
+        : m_archivePath(archivePath), m_destPath(destPath), m_password(password), m_filesToExtract(filesToExtract) {
         m_isSelective = (m_filesToExtract.size() > 0);
     }
 
@@ -38,6 +39,7 @@ signals:
 private:
     Structure::String m_archivePath;
     Structure::String m_destPath;
+    std::string m_password;
     Structure::ArrayList<Structure::String> m_filesToExtract;
     bool m_isSelective;
     bool m_useTreeMap = false;
@@ -56,6 +58,7 @@ public:
     bool shouldOverwrite() const;
     
     void setFilesToExtract(const Structure::ArrayList<Structure::String>& files);
+    void setPassword(const std::string& password) { m_password = password; }
 
 private slots:
     void onBrowseDest();
@@ -72,6 +75,7 @@ private:
     void setupConnections();
 
     QString m_archiveName;
+    std::string m_password;
     Structure::ArrayList<Structure::String> m_filesToExtract;
 
     // UI Components

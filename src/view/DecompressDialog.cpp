@@ -24,13 +24,13 @@ void DecompressionWorker::process() {
     };
 
     if (m_isSelective) {
-        Command::SelectiveDecompressCommand cmd(m_archivePath, m_destPath, m_filesToExtract);
+        Command::SelectiveDecompressCommand cmd(m_archivePath, m_destPath, m_filesToExtract, m_password);
         cmd.setProgressCallback(progressCallback);
         cmd.setCheckCancelCallback(cancelCallback);
         success = cmd.execute();
         if (!success) errorMessage = cmd.getErrorMessage();
     } else {
-        Command::DecompressDirectoryCommand cmd(m_archivePath, m_destPath);
+        Command::DecompressDirectoryCommand cmd(m_archivePath, m_destPath, m_password);
         cmd.setProgressCallback(progressCallback);
         cmd.setCheckCancelCallback(cancelCallback);
         success = cmd.execute();
@@ -253,6 +253,7 @@ void DecompressDialog::onExtract() {
     m_worker = new DecompressionWorker(
         Structure::String(m_archiveName.toStdString().c_str()),
         Structure::String(destPath.toStdString().c_str()),
+        m_password,
         m_filesToExtract
     );
     m_worker->setUseTreeMap(m_useTreeMapCheck->isChecked());

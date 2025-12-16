@@ -2,6 +2,7 @@
 #include "structure/HuffmanTree.h"
 #include "io/FileHandler.h"
 #include "io/BitStream.h"
+#include "util/CryptoUtils.h"
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -64,35 +65,71 @@ void CompressCommand::execute() {
     const char* magic = "HUFF";
     outFile.write(magic, 4);
 
+    // 写入加密标志和信息
+    bool isEncrypted = !m_password.empty();
+    unsigned char flag = isEncrypted ? 0x01 : 0x00;
+    outFile.write(reinterpret_cast<const char*>(&flag), 1);
+
+    Util::CryptoUtils::StreamCipher* cipher = nullptr;
+    if (isEncrypted) {
+        unsigned char salt[Util::CryptoUtils::SALT_SIZE];
+        unsigned char hash[Util::CryptoUtils::HASH_SIZE];
+        
+        Util::CryptoUtils::generateSalt(salt);
+        Util::CryptoUtils::hashPassword(std::string(m_password.c_str()), salt, hash);
+        
+        outFile.write(reinterpret_cast<const char*>(salt), Util::CryptoUtils::SALT_SIZE);
+        outFile.write(reinterpret_cast<const char*>(hash), Util::CryptoUtils::HASH_SIZE);
+        
+        cipher = new Util::CryptoUtils::StreamCipher(std::string(m_password.c_str()), salt);
+    }
+
+    // 定义加密写入辅助函数
+    auto writeEncrypted = [&](const char* data, size_t size) {
+        if (cipher) {
+            char* buffer = new char[size];
+            std::memcpy(buffer, data, size);
+            cipher->process(buffer, size);
+            outFile.write(buffer, size);
+            delete[] buffer;
+        } else {
+            outFile.write(data, size);
+        }
+    };
+
     // 写入频率表
     int mapSize = freqMap.size();
-    outFile.write(reinterpret_cast<const char*>(&mapSize), sizeof(int));
+    writeEncrypted(reinterpret_cast<const char*>(&mapSize), sizeof(int));
     
     for (const auto& pair : freqMap) {
         unsigned char c = pair.first;
         int f = pair.second;
-        outFile.write(reinterpret_cast<const char*>(&c), 1);
-        outFile.write(reinterpret_cast<const char*>(&f), sizeof(int));
+        writeEncrypted(reinterpret_cast<const char*>(&c), 1);
+        writeEncrypted(reinterpret_cast<const char*>(&f), sizeof(int));
     }
 
     // 写入文件数量
-    outFile.write(reinterpret_cast<const char*>(&fileCount), sizeof(int));
+    writeEncrypted(reinterpret_cast<const char*>(&fileCount), sizeof(int));
 
     // 5. 记录目录起始位置，写入占位符
     long long dirStartPos = outFile.tellp();
+    std::string cipherStateAtDirStart;
+    if (cipher) {
+        cipherStateAtDirStart = cipher->saveState();
+    }
     
     for (int i = 0; i < fileCount; ++i) {
         Model::FileRecord& record = m_model->getFile(i);
         Structure::String path = record.getRelativePath();
         int pathLen = path.length();
         
-        outFile.write(reinterpret_cast<const char*>(&pathLen), sizeof(int));
-        outFile.write(path.c_str(), pathLen);
+        writeEncrypted(reinterpret_cast<const char*>(&pathLen), sizeof(int));
+        writeEncrypted(path.c_str(), pathLen);
         
         long long zero = 0;
-        outFile.write(reinterpret_cast<const char*>(&zero), sizeof(long long)); // Orig
-        outFile.write(reinterpret_cast<const char*>(&zero), sizeof(long long)); // Comp
-        outFile.write(reinterpret_cast<const char*>(&zero), sizeof(long long)); // Offset
+        writeEncrypted(reinterpret_cast<const char*>(&zero), sizeof(long long)); // Orig
+        writeEncrypted(reinterpret_cast<const char*>(&zero), sizeof(long long)); // Comp
+        writeEncrypted(reinterpret_cast<const char*>(&zero), sizeof(long long)); // Offset
     }
 
     // 6. 写入数据 (Pass 2)
@@ -101,6 +138,7 @@ void CompressCommand::execute() {
     for (int i = 0; i < fileCount; ++i) {
         if (m_checkCancelCallback && m_checkCancelCallback()) {
             outFile.close();
+            if (cipher) delete cipher;
             std::filesystem::remove(outPath); // 删除未完成的文件
             return;
         }
@@ -130,7 +168,7 @@ void CompressCommand::execute() {
         // 写入文件
         if (bytes.size() > 0) {
             // 使用 data() 方法更安全
-            outFile.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+            writeEncrypted(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         }
         
         // 记录压缩后大小
@@ -140,23 +178,28 @@ void CompressCommand::execute() {
 
     // 7. 回填目录
     outFile.seekp(dirStartPos);
+    if (cipher) {
+        cipher->restoreState(cipherStateAtDirStart);
+    }
+
     for (int i = 0; i < fileCount; ++i) {
         Model::FileRecord& record = m_model->getFile(i);
         Structure::String path = record.getRelativePath();
         int pathLen = path.length();
         
-        outFile.write(reinterpret_cast<const char*>(&pathLen), sizeof(int));
-        outFile.write(path.c_str(), pathLen);
+        writeEncrypted(reinterpret_cast<const char*>(&pathLen), sizeof(int));
+        writeEncrypted(path.c_str(), pathLen);
         
         long long origSize = record.getOriginalSize();
         long long compSize = record.getCompressedSize();
         long long offset = record.getOffset();
         
-        outFile.write(reinterpret_cast<const char*>(&origSize), sizeof(long long));
-        outFile.write(reinterpret_cast<const char*>(&compSize), sizeof(long long));
-        outFile.write(reinterpret_cast<const char*>(&offset), sizeof(long long));
+        writeEncrypted(reinterpret_cast<const char*>(&origSize), sizeof(long long));
+        writeEncrypted(reinterpret_cast<const char*>(&compSize), sizeof(long long));
+        writeEncrypted(reinterpret_cast<const char*>(&offset), sizeof(long long));
     }
 
+    if (cipher) delete cipher;
     outFile.close();
 }
 
