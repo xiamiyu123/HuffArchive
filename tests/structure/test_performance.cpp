@@ -20,9 +20,9 @@ private slots:
 void TestPerformance::comparePerformance()
 {
     const int DATA_SIZE = 100000; // Data size
-    qDebug() << "\n========================================";
-    qDebug() << "Performance Comparison: HashMap vs TreeMap (Data Size:" << DATA_SIZE << ")";
-    qDebug() << "========================================";
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "Performance Comparison: HashMap vs TreeMap (Data Size:" << DATA_SIZE << ")" << std::endl;
+    std::cout << "========================================" << std::endl;
 
     // Prepare random data
     std::vector<int> keys(DATA_SIZE);
@@ -53,8 +53,8 @@ void TestPerformance::comparePerformance()
         end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> getTime = end - start;
 
-        qDebug() << "[HashMap] Insert Time:" << insertTime.count() << "ms";
-        qDebug() << "[HashMap] Get Time:" << getTime.count() << "ms";
+        std::cout << "[HashMap] Insert Time:" << insertTime.count() << "ms" << std::endl;
+        std::cout << "[HashMap] Get Time:" << getTime.count() << "ms" << std::endl;
 
         delete map;
     }
@@ -77,8 +77,8 @@ void TestPerformance::comparePerformance()
         end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> getTime = end - start;
 
-        qDebug() << "[TreeMap] Insert Time:" << insertTime.count() << "ms";
-        qDebug() << "[TreeMap] Get Time:" << getTime.count() << "ms";
+        std::cout << "[TreeMap] Insert Time:" << insertTime.count() << "ms" << std::endl;
+        std::cout << "[TreeMap] Get Time:" << getTime.count() << "ms" << std::endl;
 
         delete map;
     }
