@@ -7,4 +7,5 @@
 add_subdirectory(structure)  # Structure 数据结构测试
 add_subdirectory(io)         # IO 模块测试
 add_subdirectory(model)      # Model 模块测试
+add_subdirectory(view)       # View 模块测试
 add_subdirectory(command)    # Command 模块测试
