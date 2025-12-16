@@ -1,6 +1,5 @@
 #include "command/CompressCommand.h"
 #include "structure/HuffmanTree.h"
-#include "structure/TreeMap.h"
 #include "io/FileHandler.h"
 #include "io/BitStream.h"
 #include <fstream>
@@ -20,11 +19,7 @@ void CompressCommand::execute() {
     if (!m_model || m_model->getFileCount() == 0) return;
 
     // 1. 统计频率 (Pass 1)
-#ifdef USE_TREEMAP
-    Structure::TreeMap<unsigned char, int> freqMap;
-#else
     Structure::HashMap<unsigned char, int> freqMap;
-#endif
     int fileCount = m_model->getFileCount();
 
     for (int i = 0; i < fileCount; ++i) {
@@ -73,10 +68,12 @@ void CompressCommand::execute() {
     int mapSize = freqMap.size();
     outFile.write(reinterpret_cast<const char*>(&mapSize), sizeof(int));
     
-    freqMap.traverse([&](const unsigned char& c, const int& f) {
+    for (const auto& pair : freqMap) {
+        unsigned char c = pair.first;
+        int f = pair.second;
         outFile.write(reinterpret_cast<const char*>(&c), 1);
         outFile.write(reinterpret_cast<const char*>(&f), sizeof(int));
-    });
+    }
 
     // 写入文件数量
     outFile.write(reinterpret_cast<const char*>(&fileCount), sizeof(int));

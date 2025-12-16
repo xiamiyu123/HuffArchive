@@ -131,13 +131,8 @@ void HuffmanTree::build(const MapHuff<unsigned char, int>& frequencyMap) {
 
 //Ciallo～ (∠・ω< )⌒★
 
-#ifdef USE_TREEMAP
-TreeMap<unsigned char, String> HuffmanTree::generateCodes() {
-    TreeMap<unsigned char, String> codes;
-#else
 HashMap<unsigned char, String> HuffmanTree::generateCodes() {
     HashMap<unsigned char, String> codes;
-#endif
     if (m_root == -1) return codes;
 
     int n = (m_nodes.size() + 1) / 2; // 叶子节点数量
