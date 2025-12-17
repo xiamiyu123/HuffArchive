@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_historyMenu(nullptr),
       m_archiveView(nullptr),
       m_fileMenu(nullptr),
+      m_recentFilesMenu(nullptr),
       m_helpMenu(nullptr),
       m_newAction(nullptr),
       m_openAction(nullptr),
@@ -222,6 +223,10 @@ void MainWindow::setupMenuBar() {
     m_fileMenu = menuBar->addMenu("文件(F)");
     m_newAction = m_fileMenu->addAction("新建压缩文件");
     m_openAction = m_fileMenu->addAction("打开压缩文件");
+    
+    m_recentFilesMenu = m_fileMenu->addMenu("最近打开的文件");
+    updateHistoryUI(); // Update both menus
+
     m_fileMenu->addSeparator();
     m_exitAction = m_fileMenu->addAction("退出");
     
@@ -272,22 +277,26 @@ void MainWindow::onNewArchive() {
 }
 
 void MainWindow::updateHistoryUI() {
-    if (!m_historyMenu) return;
-    
-    m_historyMenu->clear();
-    
     auto history = Model::HistoryManager::instance().getHistory();
-    if (history.size() == 0) {
-        QAction* action = m_historyMenu->addAction("无历史记录");
-        action->setEnabled(false);
-        return;
-    }
+    
+    auto updateMenu = [this, &history](QMenu* menu) {
+        if (!menu) return;
+        menu->clear();
+        
+        if (history.size() == 0) {
+            QAction* action = menu->addAction("无历史记录");
+            action->setEnabled(false);
+        } else {
+            for (int i = 0; i < history.size(); ++i) {
+                QString path = QString::fromUtf8(history[i].c_str());
+                QAction* action = menu->addAction(path);
+                connect(action, &QAction::triggered, this, &MainWindow::onHistoryActionTriggered);
+            }
+        }
+    };
 
-    for (int i = 0; i < history.size(); ++i) {
-        QString path = QString::fromUtf8(history[i].c_str());
-        QAction* action = m_historyMenu->addAction(path);
-        connect(action, &QAction::triggered, this, &MainWindow::onHistoryActionTriggered);
-    }
+    updateMenu(m_historyMenu);
+    updateMenu(m_recentFilesMenu);
 }
 
 void MainWindow::onHistoryActionTriggered() {

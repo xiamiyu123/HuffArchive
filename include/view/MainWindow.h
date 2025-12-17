@@ -47,6 +47,7 @@ private:
     
     // Menu components
     QMenu* m_fileMenu;
+    QMenu* m_recentFilesMenu;
     QMenu* m_helpMenu;
     
     // Actions
