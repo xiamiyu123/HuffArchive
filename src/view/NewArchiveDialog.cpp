@@ -223,17 +223,31 @@ void NewArchiveDialog::setupBottomPanel() {
 
     // 密码选项
     QHBoxLayout* passwordLayout = new QHBoxLayout();
-    QLabel* passwordLabel = new QLabel("密码(可选):", this);
+    m_usePasswordCheck = new QCheckBox("使用密码加密", this);
+    
     m_passwordEdit = new QLineEdit(this);
-    m_passwordEdit->setPlaceholderText("留空则不加密");
+    m_passwordEdit->setPlaceholderText("请输入密码");
     m_passwordEdit->setEchoMode(QLineEdit::Password);
+    m_passwordEdit->setVisible(false); // 默认隐藏
     
     m_showPasswordCheck = new QCheckBox("显示密码", this);
+    m_showPasswordCheck->setVisible(false); // 默认隐藏
+    
+    connect(m_usePasswordCheck, &QCheckBox::toggled, [this](bool checked) {
+        m_passwordEdit->setVisible(checked);
+        m_showPasswordCheck->setVisible(checked);
+        if (checked) {
+            m_passwordEdit->setFocus();
+        } else {
+            m_passwordEdit->clear();
+        }
+    });
+    
     connect(m_showPasswordCheck, &QCheckBox::toggled, [this](bool checked) {
         m_passwordEdit->setEchoMode(checked ? QLineEdit::Normal : QLineEdit::Password);
     });
 
-    passwordLayout->addWidget(passwordLabel);
+    passwordLayout->addWidget(m_usePasswordCheck);
     passwordLayout->addWidget(m_passwordEdit);
     passwordLayout->addWidget(m_showPasswordCheck);
     settingsLayout->addLayout(passwordLayout);
@@ -403,7 +417,15 @@ void NewArchiveDialog::onCompress() {
     }
     
     Structure::String outputPath(destPath.toStdString().c_str());
-    Structure::String password(m_passwordEdit->text().toStdString().c_str());
+    Structure::String password;
+    if (m_usePasswordCheck->isChecked()) {
+        QString pwd = m_passwordEdit->text();
+        if (pwd.isEmpty()) {
+            QMessageBox::warning(this, "提示", "请输入密码！");
+            return;
+        }
+        password = Structure::String(pwd.toStdString().c_str());
+    }
     
     // 更新 UI 状态
     m_isCompressing = true;
@@ -416,6 +438,7 @@ void NewArchiveDialog::onCompress() {
     m_clearBtn->setEnabled(false);
     m_destPathEdit->setEnabled(false);
     m_browseBtn->setEnabled(false);
+    m_usePasswordCheck->setEnabled(false);
     m_passwordEdit->setEnabled(false);
     m_showPasswordCheck->setEnabled(false);
     
@@ -477,6 +500,7 @@ void NewArchiveDialog::onCompressionFinished(bool success, QString msg) {
     m_clearBtn->setEnabled(true);
     m_destPathEdit->setEnabled(true);
     m_browseBtn->setEnabled(true);
+    m_usePasswordCheck->setEnabled(true);
     m_passwordEdit->setEnabled(true);
     m_showPasswordCheck->setEnabled(true);
     
