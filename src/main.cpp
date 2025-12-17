@@ -36,6 +36,14 @@ int main(int argc, char *argv[]) {
     // 创建并显示主窗口
     View::MainWindow mainWindow;
     mainWindow.show();
+
+    // 检查命令行参数，如果有文件路径则直接打开
+    if (argc > 1) {
+        QString filePath = QString::fromLocal8Bit(argv[1]);
+        if (std::filesystem::exists(filePath.toStdString())) {
+            mainWindow.showArchiveView(filePath);
+        }
+    }
     
     int ret = app.exec();
 

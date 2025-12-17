@@ -23,13 +23,14 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    
+    void showArchiveView(const QString& archivePath);
 
 private:
     void setupUI();
     void setupMenuBar();
     void setupConnections();
     void showWelcomeScreen();
-    void showArchiveView(const QString& archivePath);
     void updateHistoryUI();
     
     // UI Components
@@ -48,17 +49,20 @@ private:
     // Menu components
     QMenu* m_fileMenu;
     QMenu* m_recentFilesMenu;
+    QMenu* m_settingsMenu;
     QMenu* m_helpMenu;
     
     // Actions
     QAction* m_newAction;
     QAction* m_openAction;
     QAction* m_exitAction;
+    QAction* m_associateAction;
     
 private slots:
     void onOpenArchive();
     void onNewArchive();
     void onHistoryActionTriggered();
+    void onAssociateFileExtension();
 };
 
 }

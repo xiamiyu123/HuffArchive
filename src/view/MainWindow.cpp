@@ -3,6 +3,7 @@
 #include "view/NewArchiveDialog.h"
 #include "command/CompressDirectoryCommand.h"
 #include "model/HistoryManager.h"
+#include "util/SystemUtils.h"
 #include <QIcon>
 #include <QFont>
 #include <QSize>
@@ -230,6 +231,10 @@ void MainWindow::setupMenuBar() {
     m_fileMenu->addSeparator();
     m_exitAction = m_fileMenu->addAction("退出");
     
+    // 设置菜单
+    m_settingsMenu = menuBar->addMenu("设置(S)");
+    m_associateAction = m_settingsMenu->addAction("关联 .huff 文件");
+    
     // 帮助菜单
     m_helpMenu = menuBar->addMenu("帮助(H)");
     m_helpMenu->addAction("关于");
@@ -244,6 +249,7 @@ void MainWindow::setupConnections() {
     connect(m_newAction, &QAction::triggered, this, &MainWindow::onNewArchive);
     connect(m_openAction, &QAction::triggered, this, &MainWindow::onOpenArchive);
     connect(m_exitAction, &QAction::triggered, this, &QMainWindow::close);
+    connect(m_associateAction, &QAction::triggered, this, &MainWindow::onAssociateFileExtension);
 }
 
 void MainWindow::onOpenArchive() {
@@ -273,6 +279,19 @@ void MainWindow::onNewArchive() {
         if (QFileInfo::exists(qArchivePath)) {
             showArchiveView(qArchivePath);
         }
+    }
+}
+
+void MainWindow::onAssociateFileExtension() {
+    if (Util::SystemUtils::isFileAssociationRegistered()) {
+        QMessageBox::information(this, "提示", "文件关联已设置。");
+        return;
+    }
+    
+    if (Util::SystemUtils::registerFileAssociation()) {
+        QMessageBox::information(this, "成功", "成功关联 .huff 文件！\n您现在可以直接双击打开 .huff 文件。");
+    } else {
+        QMessageBox::warning(this, "失败", "无法设置文件关联。\n请尝试以管理员身份运行程序。");
     }
 }
 
