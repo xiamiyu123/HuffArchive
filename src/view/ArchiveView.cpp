@@ -46,58 +46,71 @@ void ArchiveView::setupUI() {
     
     // Status Bar
     m_statusLabel = new QLabel(this);
-    m_statusLabel->setStyleSheet("padding: 8px; background: #F3F3F3; color: #666666; border-top: 1px solid #E0E0E0;");
+    m_statusLabel->setStyleSheet(
+        "QLabel {"
+        "   padding: 8px 12px;"
+        "   background: #F8F9FA;"
+        "   color: #5F6368;"
+        "   border-top: 1px solid #E8EAED;"
+        "   font-size: 12px;"
+        "}"
+    );
     m_mainLayout->addWidget(m_statusLabel);
     
     // Global Styles
     setStyleSheet(
-        "QWidget { background-color: #FFFFFF; }"
-        "QTreeWidget { border: none; }"
+        "QWidget { background-color: #FFFFFF; font-family: 'Segoe UI', sans-serif; }"
+        "QTreeWidget { border: none; outline: none; }"
         "QHeaderView::section { "
-        "   background-color: #FAFAFA; "
+        "   background-color: #FFFFFF; "
         "   border: none; "
         "   border-bottom: 1px solid #E0E0E0; "
-        "   border-right: 1px solid #F0F0F0; "
-        "   padding: 6px; "
-        "   font-weight: bold; "
-        "   color: #666666; "
+        "   padding: 8px 12px; "
+        "   font-weight: 600; "
+        "   color: #5F6368; "
+        "   text-align: left;"
         "}"
+        "QHeaderView::section:hover { background-color: #F1F3F4; }"
     );
 }
 
 void ArchiveView::setupToolBar() {
     m_topPanel = new QWidget(this);
-    m_topPanel->setStyleSheet("background-color: #F9F9F9; border-bottom: 1px solid #E0E0E0;");
+    m_topPanel->setStyleSheet("background-color: #FFFFFF; border-bottom: 1px solid #E0E0E0;");
     
     QVBoxLayout* panelLayout = new QVBoxLayout(m_topPanel);
-    panelLayout->setSpacing(10);
-    panelLayout->setContentsMargins(10, 10, 10, 10);
+    panelLayout->setSpacing(12);
+    panelLayout->setContentsMargins(16, 12, 16, 12);
     
     // 1. Action Buttons Row
     QHBoxLayout* btnLayout = new QHBoxLayout();
-    btnLayout->setSpacing(8);
+    btnLayout->setSpacing(12);
     
     auto createBtn = [this](const QString& text, const QString& iconName, const QString& objName = "") -> QPushButton* {
+        Q_UNUSED(iconName);
         QPushButton* btn = new QPushButton(text, this);
-        btn->setIcon(QIcon::fromTheme(iconName));
+        // btn->setIcon(QIcon::fromTheme(iconName)); // Icons might not be available on Windows without theme
         if (!objName.isEmpty()) btn->setObjectName(objName);
         btn->setCursor(Qt::PointingHandCursor);
         btn->setStyleSheet(
             "QPushButton { "
-            "   border: 1px solid transparent; "
-            "   border-radius: 4px; "
-            "   padding: 6px 12px; "
-            "   background: transparent; "
-            "   color: #333333; "
+            "   border: 1px solid #DADCE0; "
+            "   border-radius: 6px; "
+            "   padding: 6px 16px; "
+            "   background: #FFFFFF; "
+            "   color: #3C4043; "
             "   font-weight: 500; "
+            "   font-size: 13px;"
             "}"
-            "QPushButton:hover { background: #EAEAEA; border-color: #D0D0D0; }"
-            "QPushButton:pressed { background: #DADADA; }"
+            "QPushButton:hover { background: #F8F9FA; border-color: #DADCE0; color: #202124; }"
+            "QPushButton:pressed { background: #F1F3F4; border-color: #DADCE0; }"
             "QPushButton#PrimaryAction { "
-            "   background: #0078D4; "
+            "   background: #1A73E8; "
             "   color: white; "
+            "   border: 1px solid #1A73E8;"
             "}"
-            "QPushButton#PrimaryAction:hover { background: #106EBE; }"
+            "QPushButton#PrimaryAction:hover { background: #1557B0; border-color: #1557B0; }"
+            "QPushButton#PrimaryAction:pressed { background: #174EA6; border-color: #174EA6; }"
         );
         return btn;
     };
@@ -106,7 +119,7 @@ void ArchiveView::setupToolBar() {
     m_extractSelectedBtn = createBtn("解压选中", "archive-extract");
     m_addBtn = createBtn("添加文件", "list-add");
     m_deleteBtn = createBtn("删除", "edit-delete");
-    m_infoBtn = createBtn("属性信息", "dialog-information");
+    m_infoBtn = createBtn("属性", "dialog-information");
     
     btnLayout->addWidget(m_extractBtn);
     btnLayout->addWidget(m_extractSelectedBtn);
@@ -117,9 +130,10 @@ void ArchiveView::setupToolBar() {
     
     // 2. Address Bar Row
     QHBoxLayout* addressLayout = new QHBoxLayout();
+    addressLayout->setSpacing(10);
     
     QLabel* pathLabel = new QLabel("位置:", this);
-    pathLabel->setStyleSheet("color: #666666; font-weight: bold;");
+    pathLabel->setStyleSheet("color: #5F6368; font-weight: 500; font-size: 13px;");
     
     m_pathEdit = new QLineEdit(this);
     m_pathEdit->setReadOnly(true);
@@ -127,11 +141,13 @@ void ArchiveView::setupToolBar() {
     m_pathEdit->setStyleSheet(
         "QLineEdit { "
         "   border: 1px solid #E0E0E0; "
-        "   border-radius: 4px; "
-        "   padding: 6px; "
-        "   background: #FFFFFF; "
-        "   color: #333333; "
+        "   border-radius: 6px; "
+        "   padding: 6px 10px; "
+        "   background: #F8F9FA; "
+        "   color: #3C4043; "
+        "   font-size: 13px;"
         "}"
+        "QLineEdit:focus { border: 1px solid #1A73E8; background: #FFFFFF; }"
     );
     
     addressLayout->addWidget(pathLabel);
@@ -156,12 +172,31 @@ void ArchiveView::setupFileList() {
     m_fileList->setSortingEnabled(true);
     m_fileList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_fileList->setIndentation(20);
+    m_fileList->setUniformRowHeights(true);
     
     // Item Style
     m_fileList->setStyleSheet(
-        "QTreeWidget::item { padding: 4px; }"
-        "QTreeWidget::item:selected { background-color: #E3F2FD; color: #333333; }"
-        "QTreeWidget::item:hover { background-color: #F5F5F5; }"
+        "QTreeWidget { "
+        "   background-color: #FFFFFF;"
+        "   alternate-background-color: #FAFAFA;"
+        "   selection-background-color: #E8F0FE;"
+        "   selection-color: #1967D2;"
+        "}"
+        "QTreeWidget::item { "
+        "   padding: 6px;"
+        "   border: none;"
+        "   color: #202124;"
+        "}"
+        "QTreeWidget::item:hover { "
+        "   background-color: #F1F3F4;"
+        "}"
+        "QTreeWidget::item:selected { "
+        "   background-color: #E8F0FE;"
+        "   color: #1967D2;"
+        "}"
+        "QTreeWidget::item:selected:hover { "
+        "   background-color: #D2E3FC;"
+        "}"
     );
     
     m_mainLayout->addWidget(m_fileList);
