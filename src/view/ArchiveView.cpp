@@ -390,7 +390,7 @@ void ArchiveView::onDelete() {
 }
 
 void ArchiveView::onInfo() {
-    ArchivePropertiesDialog dialog(m_archivePath, this);
+    ArchivePropertiesDialog dialog(m_archivePath, this, m_password);
     dialog.exec();
 }
 

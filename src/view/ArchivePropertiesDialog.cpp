@@ -1,4 +1,5 @@
 #include "view/ArchivePropertiesDialog.h"
+#include "util/CryptoUtils.h"
 #include <QDialogButtonBox>
 #include <QFileInfo>
 #include <QDateTime>
@@ -7,8 +8,8 @@
 
 namespace View {
 
-ArchivePropertiesDialog::ArchivePropertiesDialog(const Structure::String& archivePath, QWidget *parent)
-    : QDialog(parent), m_archivePath(archivePath) {
+ArchivePropertiesDialog::ArchivePropertiesDialog(const Structure::String& archivePath, QWidget *parent, const std::string& password)
+    : QDialog(parent), m_archivePath(archivePath), m_password(password) {
     setWindowTitle("压缩包属性");
     setModal(true);
     resize(400, 300);
@@ -70,20 +71,52 @@ void ArchivePropertiesDialog::loadProperties() {
         inFile.close();
         return;
     }
+
+    // 读取 Flag
+    char flag = 0;
+    inFile.read(&flag, 1);
+    bool isEncrypted = (flag & 0x01);
+
+    Util::CryptoUtils::StreamCipher* cipher = nullptr;
+
+    if (isEncrypted) {
+        char salt[8];
+        inFile.read(salt, 8);
+        
+        char fileHash[16];
+        inFile.read(fileHash, 16);
+
+        if (m_password.empty()) {
+             m_fileCountLabel->setText("加密文件(未解锁)");
+             m_compressionRatioLabel->setText("-");
+             inFile.close();
+             return;
+        }
+
+        // 初始化 Cipher
+        cipher = new Util::CryptoUtils::StreamCipher(m_password, reinterpret_cast<const unsigned char*>(salt));
+    }
+
+    auto readEncrypted = [&](char* buf, size_t size) {
+        inFile.read(buf, size);
+        if (cipher) {
+            cipher->process(buf, size);
+        }
+    };
     
     // 读取频率表大小并跳过
     int mapSize;
-    inFile.read(reinterpret_cast<char*>(&mapSize), sizeof(int));
+    readEncrypted(reinterpret_cast<char*>(&mapSize), sizeof(int));
     for (int i = 0; i < mapSize; ++i) {
         unsigned char c;
         int f;
-        inFile.read(reinterpret_cast<char*>(&c), 1);
-        inFile.read(reinterpret_cast<char*>(&f), sizeof(int));
+        readEncrypted(reinterpret_cast<char*>(&c), 1);
+        readEncrypted(reinterpret_cast<char*>(&f), sizeof(int));
     }
     
     // 读取文件数量
     int fileCount;
-    inFile.read(reinterpret_cast<char*>(&fileCount), sizeof(int));
+    readEncrypted(reinterpret_cast<char*>(&fileCount), sizeof(int));
     m_fileCountLabel->setText(QString::number(fileCount));
     
     // 计算压缩率：需要读取所有文件的原始大小和压缩大小
@@ -91,21 +124,25 @@ void ArchivePropertiesDialog::loadProperties() {
     long long totalCompressedSize = 0;
     
     for (int i = 0; i < fileCount; ++i) {
-        // 读取路径长度并跳过
+        // 读取路径长度
         int pathLen;
-        inFile.read(reinterpret_cast<char*>(&pathLen), sizeof(int));
-        inFile.seekg(pathLen, std::ios::cur);
+        readEncrypted(reinterpret_cast<char*>(&pathLen), sizeof(int));
+        
+        // 读取并跳过路径内容 (必须读取以保持 cipher 同步)
+        std::vector<char> pathBuf(pathLen);
+        readEncrypted(pathBuf.data(), pathLen);
         
         // 读取大小信息
         long long originalSize, compressedSize, offset;
-        inFile.read(reinterpret_cast<char*>(&originalSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&compressedSize), sizeof(long long));
-        inFile.read(reinterpret_cast<char*>(&offset), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&originalSize), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&compressedSize), sizeof(long long));
+        readEncrypted(reinterpret_cast<char*>(&offset), sizeof(long long));
         
         totalOriginalSize += originalSize;
         totalCompressedSize += compressedSize;
     }
     
+    if (cipher) delete cipher;
     inFile.close();
     
     if (totalOriginalSize > 0) {

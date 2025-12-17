@@ -14,7 +14,7 @@ class ArchivePropertiesDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit ArchivePropertiesDialog(const Structure::String& archivePath, QWidget *parent = nullptr);
+    explicit ArchivePropertiesDialog(const Structure::String& archivePath, QWidget *parent = nullptr, const std::string& password = "");
     ~ArchivePropertiesDialog();
 
 private:
@@ -22,6 +22,7 @@ private:
     void loadProperties();
 
     Structure::String m_archivePath;
+    std::string m_password;
     
     QLabel* m_nameLabel;
     QLabel* m_sizeLabel;
