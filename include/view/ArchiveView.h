@@ -9,6 +9,8 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QHeaderView>
+#include <QProgressBar>
+#include <QFutureWatcher>
 #include "structure/String.h"
 
 namespace View {
@@ -37,6 +39,7 @@ private:
     QLineEdit* m_pathEdit;    // Address bar
     QTreeWidget* m_fileList;
     QLabel* m_statusLabel;
+    QProgressBar* m_progressBar;
     
     // Toolbar actions
     QPushButton* m_extractBtn;
@@ -45,6 +48,11 @@ private:
     QPushButton* m_deleteBtn;
     QPushButton* m_infoBtn;   // Replaces properties/test/help for cleaner UI
 
+    // Async handling
+    QFutureWatcher<std::pair<bool, std::string>> m_openFileWatcher;
+    Structure::String m_currentOpeningFile;
+    Structure::String m_currentTempDir;
+
 private slots:
     void onExtract();
     void onExtractSelected();
@@ -52,6 +60,7 @@ private slots:
     void onDelete();
     void onInfo();
     void onItemDoubleClicked(QTreeWidgetItem* item, int column);
+    void onOpenFileFinished();
 
 private:
     // Helper for temporary extraction

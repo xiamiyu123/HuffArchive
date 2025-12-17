@@ -45,17 +45,44 @@ void ArchiveView::setupUI() {
     setupFileList();
     
     // Status Bar
+    QWidget* bottomBar = new QWidget(this);
+    bottomBar->setStyleSheet("background: #F8F9FA; border-top: 1px solid #E8EAED;");
+    QHBoxLayout* bottomLayout = new QHBoxLayout(bottomBar);
+    bottomLayout->setContentsMargins(0, 0, 12, 0);
+    bottomLayout->setSpacing(10);
+
     m_statusLabel = new QLabel(this);
     m_statusLabel->setStyleSheet(
         "QLabel {"
         "   padding: 8px 12px;"
-        "   background: #F8F9FA;"
+        "   background: transparent;"
         "   color: #5F6368;"
-        "   border-top: 1px solid #E8EAED;"
+        "   border: none;"
         "   font-size: 12px;"
         "}"
     );
-    m_mainLayout->addWidget(m_statusLabel);
+    bottomLayout->addWidget(m_statusLabel, 1);
+
+    m_progressBar = new QProgressBar(this);
+    m_progressBar->setRange(0, 0);
+    m_progressBar->setFixedWidth(150);
+    m_progressBar->setFixedHeight(4);
+    m_progressBar->setTextVisible(false);
+    m_progressBar->setStyleSheet(
+        "QProgressBar {"
+        "   border: none;"
+        "   background-color: #E0E0E0;"
+        "   border-radius: 2px;"
+        "}"
+        "QProgressBar::chunk {"
+        "   background-color: #1A73E8;"
+        "   border-radius: 2px;"
+        "}"
+    );
+    m_progressBar->hide();
+    bottomLayout->addWidget(m_progressBar);
+
+    m_mainLayout->addWidget(bottomBar);
     
     // Global Styles
     setStyleSheet(
@@ -209,6 +236,7 @@ void ArchiveView::setupConnections() {
     connect(m_deleteBtn, &QPushButton::clicked, this, &ArchiveView::onDelete);
     connect(m_infoBtn, &QPushButton::clicked, this, &ArchiveView::onInfo);
     connect(m_fileList, &QTreeWidget::itemDoubleClicked, this, &ArchiveView::onItemDoubleClicked);
+    connect(&m_openFileWatcher, &QFutureWatcher<std::pair<bool, std::string>>::finished, this, &ArchiveView::onOpenFileFinished);
 }
 
 void ArchiveView::loadArchive() {
@@ -439,36 +467,79 @@ void ArchiveView::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
 }
 
 void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
-    // 1. 准备临时目录
+    if (m_openFileWatcher.isRunning()) {
+        return;
+    }
+
+    m_progressBar->show();
+    m_statusLabel->setText(tr("正在打开文件..."));
+    m_fileList->setEnabled(false);
+
+    // Prepare parameters for the thread
+    // Use absolute path for temp dir to avoid issues
     std::filesystem::path tempDir = std::filesystem::current_path() / "data" / "tmp";
     std::error_code ec;
     std::filesystem::create_directories(tempDir, ec);
     
-    Structure::String tempDirStr(tempDir.string().c_str());
-    
-    // 2. 准备解压命令
-    Structure::ArrayList<Structure::String> filter;
-    filter.add(relativePath);
-    
-    Command::SelectiveDecompressCommand cmd(m_archivePath, tempDirStr, filter, m_password);
-    
-    // 3. 执行解压 (同步执行，因为只是单个文件，通常很快)
-    // 显示等待光标
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    bool success = cmd.execute();
-    QApplication::restoreOverrideCursor();
-    
-    if (!success) {
-        QMessageBox::warning(this, "错误", "无法解压文件: " + QString::fromStdString(cmd.getErrorMessage().c_str()));
-        return;
-    }
-    
-    // 4. 打开文件
-    std::filesystem::path extractedPath = tempDir / std::filesystem::path(reinterpret_cast<const char8_t*>(relativePath.c_str()));
-    QString qPath = QString::fromStdString(extractedPath.string());
-    
-    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(qPath))) {
-        QMessageBox::warning(this, "错误", "无法打开文件: " + qPath);
+    std::string tempDirStr = tempDir.string();
+    std::string archivePathStr = m_archivePath.c_str();
+    std::string relPathStr = relativePath.c_str();
+    std::string passwordStr = m_password;
+
+    // Run extraction in background
+    QFuture<std::pair<bool, std::string>> future = QtConcurrent::run([=]() -> std::pair<bool, std::string> {
+        try {
+            Structure::String sArchivePath(archivePathStr.c_str());
+            Structure::String sTempDir(tempDirStr.c_str());
+            Structure::String sRelPath(relPathStr.c_str());
+            
+            Structure::ArrayList<Structure::String> filter;
+            filter.add(sRelPath);
+
+            Command::SelectiveDecompressCommand cmd(
+                sArchivePath,
+                sTempDir,
+                filter,
+                passwordStr
+            );
+            
+            if (cmd.execute()) {
+                // Construct the full path to the extracted file
+                std::filesystem::path outDir(tempDirStr);
+                std::filesystem::path relPath(relPathStr);
+                // SelectiveDecompressCommand preserves directory structure relative to output dir?
+                // Usually it does. Let's assume it extracts to tempDir/relPath
+                // But wait, if the archive has folders, does it create them? Yes.
+                
+                std::filesystem::path fullPath = outDir / relPath;
+                
+                return {true, fullPath.string()};
+            } else {
+                return {false, cmd.getErrorMessage().c_str()};
+            }
+        } catch (const std::exception& e) {
+            return {false, std::string(e.what())};
+        }
+    });
+
+    m_openFileWatcher.setFuture(future);
+}
+
+void ArchiveView::onOpenFileFinished() {
+    m_progressBar->hide();
+    m_fileList->setEnabled(true);
+    m_statusLabel->setText(tr("就绪"));
+
+    auto result = m_openFileWatcher.result();
+    if (result.first) {
+        QString extractedPath = QString::fromStdString(result.second);
+        if (!QDesktopServices::openUrl(QUrl::fromLocalFile(extractedPath))) {
+             QMessageBox::warning(this, tr("错误"), 
+                tr("无法打开文件: %1").arg(extractedPath));
+        }
+    } else {
+        QMessageBox::warning(this, tr("错误"), 
+            tr("无法解压文件: %1").arg(QString::fromStdString(result.second)));
     }
 }
 
