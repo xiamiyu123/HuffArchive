@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QDateTime>
 #include <QStandardPaths>
+#include <QCoreApplication>
 
 namespace Model {
 
@@ -13,12 +14,13 @@ HistoryManager& HistoryManager::instance() {
 }
 
 HistoryManager::HistoryManager() {
-    // Ensure data directory exists
-    QDir dir("data");
+    // Ensure data directory exists relative to application executable
+    QString dataPath = QCoreApplication::applicationDirPath() + "/data";
+    QDir dir(dataPath);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
-    m_historyFilePath = "data/history.csv";
+    m_historyFilePath = (dataPath + "/history.csv").toUtf8().constData();
     loadHistory();
 }
 
