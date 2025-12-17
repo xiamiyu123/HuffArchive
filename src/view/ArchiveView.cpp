@@ -415,7 +415,7 @@ void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
     Structure::ArrayList<Structure::String> filter;
     filter.add(relativePath);
     
-    Command::SelectiveDecompressCommand cmd(m_archivePath, tempDirStr, filter);
+    Command::SelectiveDecompressCommand cmd(m_archivePath, tempDirStr, filter, m_password);
     
     // 3. 执行解压 (同步执行，因为只是单个文件，通常很快)
     // 显示等待光标

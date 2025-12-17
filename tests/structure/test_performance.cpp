@@ -35,7 +35,7 @@ struct HuffmanPerformanceResult {
 void TestPerformance::comparePerformance()
 {
     // --- 第一部分：Map 基础性能测试 ---
-    const int DATA_SIZE = 100000; // 数据量
+    const int DATA_SIZE = 1000000; // 数据量
     std::cout << "\n========================================" << std::endl;
     std::cout << "Map 基础性能对比 (数据量: " << DATA_SIZE << ")" << std::endl;
     std::cout << "========================================" << std::endl;
