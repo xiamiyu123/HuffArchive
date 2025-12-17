@@ -4,6 +4,11 @@
 #include <QDir>
 #include <QString>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>
+#endif
+
 namespace Util {
 
 bool SystemUtils::registerFileAssociation() {
@@ -32,6 +37,9 @@ bool SystemUtils::registerFileAssociation() {
     // 4. Set Open Command
     settings.setValue(className + "/shell/open/command/.", QString("\"" + appPath + "\" \"%1\""));
     
+    settings.sync();
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+
     return true;
 #else
     // Linux/Mac implementation would go here (e.g., .desktop files)
