@@ -147,7 +147,7 @@ void ArchivePropertiesDialog::loadProperties() {
     
     if (totalOriginalSize > 0) {
         double ratio = (1.0 - static_cast<double>(totalCompressedSize) / totalOriginalSize) * 100.0;
-        m_compressionRatioLabel->setText(QString::number(ratio, 'f', 1) + "%");
+        m_compressionRatioLabel->setText(QString::number(ratio, 'f', 3) + "%");
     } else {
         m_compressionRatioLabel->setText("0%");
     }
