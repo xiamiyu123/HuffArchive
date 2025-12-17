@@ -65,7 +65,7 @@ NewArchiveDialog::~NewArchiveDialog() {
 
 void NewArchiveDialog::setupUI() {
     setWindowTitle("新建压缩文件");
-    setMinimumSize(800, 500);
+    setMinimumSize(800, 600);
     resize(800, 500);
     
     m_mainLayout = new QVBoxLayout(this);
