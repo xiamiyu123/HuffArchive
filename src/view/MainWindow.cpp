@@ -1,16 +1,22 @@
 #include "view/MainWindow.h"
 #include "view/ArchiveView.h"
+#include "view/TestView.h"
 #include "view/NewArchiveDialog.h"
 #include "view/AboutDialog.h"
 #include "command/CompressDirectoryCommand.h"
 #include "model/HistoryManager.h"
 #include "util/SystemUtils.h"
+#include "structure/HuffmanTree.h"
 #include <QIcon>
 #include <QFont>
 #include <QSize>
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QProgressDialog>
+#include <QElapsedTimer>
+#include <QApplication>
+#include <random>
+#include <algorithm>
 
 namespace View {
 
@@ -25,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_newButton(nullptr),
       m_historyMenu(nullptr),
       m_archiveView(nullptr),
+      m_testView(nullptr),
       m_fileMenu(nullptr),
       m_recentFilesMenu(nullptr),
       m_helpMenu(nullptr),
@@ -57,6 +64,7 @@ void MainWindow::showWelcomeScreen() {
     // 如果欢迎界面已存在，直接显示
     if (m_welcomeWidget) {
         m_stackedWidget->setCurrentWidget(m_welcomeWidget);
+        setWindowTitle("哈夫曼压缩工具");
         return;
     }
     
@@ -184,6 +192,16 @@ void MainWindow::showArchiveView(const QString& archivePath) {
     setWindowTitle(QString("哈夫曼压缩工具 - %1").arg(QFileInfo(archivePath).fileName()));
 }
 
+void MainWindow::showTestView() {
+    if (!m_testView) {
+        m_testView = new TestView(this);
+        m_stackedWidget->addWidget(m_testView);
+        connect(m_testView, &TestView::backRequested, this, &MainWindow::showWelcomeScreen);
+    }
+    m_stackedWidget->setCurrentWidget(m_testView);
+    setWindowTitle("哈夫曼压缩工具 - 性能测试");
+}
+
 void MainWindow::setupMenuBar() {
     // 创建菜单栏
     QMenuBar* menuBar = this->menuBar();
@@ -235,6 +253,10 @@ void MainWindow::setupMenuBar() {
     // 设置菜单
     m_settingsMenu = menuBar->addMenu("设置(S)");
     m_associateAction = m_settingsMenu->addAction("关联 .huff 文件");
+
+    // 测试菜单
+    m_testMenu = menuBar->addMenu("测试(T)");
+    m_speedTestAction = m_testMenu->addAction("随机数据压缩速度测试");
     
     // 帮助菜单
     m_helpMenu = menuBar->addMenu("帮助(H)");
@@ -251,6 +273,7 @@ void MainWindow::setupConnections() {
     connect(m_openAction, &QAction::triggered, this, &MainWindow::onOpenArchive);
     connect(m_exitAction, &QAction::triggered, this, &QMainWindow::close);
     connect(m_associateAction, &QAction::triggered, this, &MainWindow::onAssociateFileExtension);
+    connect(m_speedTestAction, &QAction::triggered, this, &MainWindow::onSpeedTestTriggered);
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutTriggered);
 }
 
@@ -330,6 +353,10 @@ void MainWindow::onHistoryActionTriggered() {
     } else if (!path.isEmpty()) {
         QMessageBox::warning(this, "错误", "文件不存在或已被移动");
     }
+}
+
+void MainWindow::onSpeedTestTriggered() {
+    showTestView();
 }
 
 void MainWindow::onAboutTriggered() {

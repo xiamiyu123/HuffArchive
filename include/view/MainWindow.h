@@ -16,6 +16,7 @@
 namespace View {
 
 class ArchiveView;
+class TestView;
 class AboutDialog;
 
 class MainWindow : public QMainWindow {
@@ -26,6 +27,7 @@ public:
     ~MainWindow();
     
     void showArchiveView(const QString& archivePath);
+    void showTestView();
 
 private:
     void setupUI();
@@ -46,11 +48,13 @@ private:
     QMenu* m_historyMenu;
     
     ArchiveView* m_archiveView;
+    TestView* m_testView;
     
     // Menu components
     QMenu* m_fileMenu;
     QMenu* m_recentFilesMenu;
     QMenu* m_settingsMenu;
+    QMenu* m_testMenu;
     QMenu* m_helpMenu;
     
     // Actions
@@ -58,6 +62,7 @@ private:
     QAction* m_openAction;
     QAction* m_exitAction;
     QAction* m_associateAction;
+    QAction* m_speedTestAction;
     QAction* m_aboutAction;
     
 private slots:
@@ -65,6 +70,7 @@ private slots:
     void onNewArchive();
     void onHistoryActionTriggered();
     void onAssociateFileExtension();
+    void onSpeedTestTriggered();
     void onAboutTriggered();
 };
 
