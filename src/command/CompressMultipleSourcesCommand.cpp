@@ -115,19 +115,22 @@ void CompressMultipleSourcesCommand::computeRelativePaths() {
     // 为每个文件找到它对应的源路径
     for (int i = 0; i < m_model.getFileCount(); ++i) {
         Model::FileRecord& record = m_model.getFile(i);
-        fs::path fullPath(record.getFilePath().c_str());
+        fs::path fullPath(reinterpret_cast<const char8_t*>(record.getFilePath().c_str()));
         fs::path relativePath;
         
         bool found = false;
         
         // 遍历源路径，找到此文件属于哪个源
         for (int j = 0; j < m_sourcePaths.size(); ++j) {
-            fs::path sourcePath(m_sourcePaths[j].c_str());
+            fs::path sourcePath(reinterpret_cast<const char8_t*>(m_sourcePaths[j].c_str()));
             
             if (fs::is_directory(sourcePath)) {
                 // 检查文件是否在此目录下
-                auto fullStr = fullPath.string();
-                auto srcStr = sourcePath.string();
+                // 使用 u8string() 避免 Windows 下的编码转换错误
+                std::u8string u8Full = fullPath.u8string();
+                std::u8string u8Src = sourcePath.u8string();
+                std::string fullStr(reinterpret_cast<const char*>(u8Full.c_str()));
+                std::string srcStr(reinterpret_cast<const char*>(u8Src.c_str()));
                 
                 // 确保路径分隔符统一
                 std::replace(fullStr.begin(), fullStr.end(), '\\', '/');
@@ -161,7 +164,8 @@ void CompressMultipleSourcesCommand::computeRelativePaths() {
             relativePath = fullPath.filename();
         }
         
-        Structure::String relPathStr(relativePath.string().c_str());
+        std::u8string u8Rel = relativePath.u8string();
+        Structure::String relPathStr(reinterpret_cast<const char*>(u8Rel.c_str()));
         record.setRelativePath(relPathStr);
     }
 }

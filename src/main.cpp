@@ -40,7 +40,8 @@ int main(int argc, char *argv[]) {
     // 检查命令行参数，如果有文件路径则直接打开
     if (argc > 1) {
         QString filePath = QString::fromLocal8Bit(argv[1]);
-        if (std::filesystem::exists(filePath.toStdString())) {
+        std::string u8Path = filePath.toStdString();
+        if (std::filesystem::exists(std::filesystem::path(reinterpret_cast<const char8_t*>(u8Path.c_str())))) {
             mainWindow.showArchiveView(filePath);
         }
     }

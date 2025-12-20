@@ -31,7 +31,8 @@ void AddFileCommand::execute() {
     }
     std::filesystem::create_directories(tempDir, ec);
     
-    Structure::String tempDirStr(tempDir.string().c_str());
+    std::u8string u8TempDir = tempDir.u8string();
+    Structure::String tempDirStr(reinterpret_cast<const char*>(u8TempDir.c_str()));
 
     // 2. 解压现有归档
     if (m_progressCallback) m_progressCallback(0.0f, "正在解压现有归档...");
@@ -55,7 +56,8 @@ void AddFileCommand::execute() {
         // DecompressCommand 设置相对路径。我们需要在临时目录中构建完整的文件路径。
         std::filesystem::path relPath(reinterpret_cast<const char8_t*>(record.getRelativePath().c_str()));
         std::filesystem::path fullPath = tempDir / relPath;
-        record.setFilePath(Structure::String(fullPath.string().c_str()));
+        std::u8string u8FullPath = fullPath.u8string();
+        record.setFilePath(Structure::String(reinterpret_cast<const char*>(u8FullPath.c_str())));
         record.setStatus(Model::FileStatus::Pending); // 为压缩重置状态
     }
 
@@ -63,7 +65,8 @@ void AddFileCommand::execute() {
     for (int i = 0; i < m_newFiles.size(); ++i) {
         Structure::String newFilePath = m_newFiles[i];
         std::filesystem::path path(reinterpret_cast<const char8_t*>(newFilePath.c_str()));
-        std::string filename = path.filename().string();
+        std::u8string u8Filename = path.filename().u8string();
+        std::string filename(reinterpret_cast<const char*>(u8Filename.c_str()));
         
         Model::FileRecord record(newFilePath, Model::FileType::File);
         record.setRelativePath(Structure::String(filename.c_str()));
@@ -78,7 +81,8 @@ void AddFileCommand::execute() {
     std::filesystem::path finalOutPath(reinterpret_cast<const char8_t*>(m_outputArchivePath.c_str()));
     std::filesystem::path tempOutPath = finalOutPath;
     tempOutPath += ".tmp";
-    Structure::String tempOutPathStr(tempOutPath.string().c_str());
+    std::u8string u8TempOutPath = tempOutPath.u8string();
+    Structure::String tempOutPathStr(reinterpret_cast<const char*>(u8TempOutPath.c_str()));
 
     CompressCommand compressCmd(m_model, tempOutPathStr);
     compressCmd.setProgressCallback([this](float p, const std::string& msg) {

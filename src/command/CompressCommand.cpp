@@ -29,7 +29,8 @@ void CompressCommand::execute() {
         if (m_progressCallback) {
             float p = 0.4f * (float)i / fileCount;
             m_model->getFile(i).getFilePath(); // Ensure path is valid
-            std::string name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().string();
+            std::u8string u8Name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().u8string();
+            std::string name(reinterpret_cast<const char*>(u8Name.c_str()));
             m_progressCallback(p, "Analyzing: " + name);
         }
 

@@ -509,7 +509,8 @@ void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
     std::error_code ec;
     std::filesystem::create_directories(tempDir, ec);
     
-    std::string tempDirStr = tempDir.string();
+    std::u8string u8TempDir = tempDir.u8string();
+    std::string tempDirStr(reinterpret_cast<const char*>(u8TempDir.c_str()));
     std::string archivePathStr = m_archivePath.c_str();
     std::string relPathStr = relativePath.c_str();
     std::string passwordStr = m_password;
@@ -540,8 +541,8 @@ void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
                 // But wait, if the archive has folders, does it create them? Yes.
                 
                 std::filesystem::path fullPath = outDir / relPath;
-                
-                return {true, fullPath.string()};
+                std::u8string u8FullPath = fullPath.u8string();
+                return {true, std::string(reinterpret_cast<const char*>(u8FullPath.c_str()))};
             } else {
                 return {false, cmd.getErrorMessage().c_str()};
             }
