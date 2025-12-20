@@ -8,6 +8,8 @@
 #include <QProgressBar>
 #include <QComboBox>
 #include <QTabWidget>
+#include <QLineEdit>
+#include <QFileDialog>
 
 namespace View {
 
@@ -25,6 +27,8 @@ signals:
 
 private slots:
     void onRunTest();
+    void onSaveResult();
+    void onTestTypeChanged(int index);
 
 private:
     void setupUI();
@@ -32,7 +36,9 @@ private:
     QVBoxLayout* m_mainLayout;
     QLabel* m_titleLabel;
     QComboBox* m_testTypeCombo;
+    QLineEdit* m_manualInput;
     QPushButton* m_runBtn;
+    QPushButton* m_saveBtn;
     QPushButton* m_backBtn;
     
     QTabWidget* m_tabWidget;

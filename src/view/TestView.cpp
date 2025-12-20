@@ -5,6 +5,8 @@
 #include "view/CodeTableView.h"
 #include <QElapsedTimer>
 #include <QApplication>
+#include <QFile>
+#include <QTextStream>
 #include <random>
 #include <vector>
 
@@ -52,9 +54,17 @@ void TestView::setupUI() {
     m_testTypeCombo->addItem("全零数据测试 (1MB)", 1);
     m_testTypeCombo->addItem("递增序列测试 (1MB)", 2);
     m_testTypeCombo->addItem("少量字符重复测试 (100KB)", 3);
+    m_testTypeCombo->addItem("人工输入数据", 4);
     m_testTypeCombo->setFixedWidth(200);
     m_testTypeCombo->setStyleSheet("QComboBox { padding: 5px; border: 1px solid #DADCE0; border-radius: 4px; }");
     ctrlLayout->addWidget(m_testTypeCombo);
+
+    m_manualInput = new QLineEdit(this);
+    m_manualInput->setPlaceholderText("在此输入测试文本...");
+    m_manualInput->setFixedWidth(200);
+    m_manualInput->setStyleSheet("QLineEdit { padding: 5px; border: 1px solid #DADCE0; border-radius: 4px; }");
+    m_manualInput->hide();
+    ctrlLayout->addWidget(m_manualInput);
 
     m_runBtn = new QPushButton("开始测试", this);
     m_runBtn->setFixedSize(120, 36);
@@ -65,6 +75,16 @@ void TestView::setupUI() {
         "QPushButton:disabled { background: #E0E0E0; color: #9E9E9E; }"
     );
     ctrlLayout->addWidget(m_runBtn);
+
+    m_saveBtn = new QPushButton("保存结果", this);
+    m_saveBtn->setFixedSize(100, 36);
+    m_saveBtn->setCursor(Qt::PointingHandCursor);
+    m_saveBtn->setStyleSheet(
+        "QPushButton { border: 1px solid #DADCE0; border-radius: 4px; background: white; color: #3C4043; }"
+        "QPushButton:hover { background: #F8F9FA; }"
+    );
+    ctrlLayout->addWidget(m_saveBtn);
+
     ctrlLayout->addStretch();
     m_mainLayout->addLayout(ctrlLayout);
 
@@ -107,7 +127,9 @@ void TestView::setupUI() {
     m_mainLayout->addWidget(m_tabWidget);
 
     connect(m_runBtn, &QPushButton::clicked, this, &TestView::onRunTest);
+    connect(m_saveBtn, &QPushButton::clicked, this, &TestView::onSaveResult);
     connect(m_backBtn, &QPushButton::clicked, this, &TestView::backRequested);
+    connect(m_testTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &TestView::onTestTypeChanged);
 }
 
 void TestView::onRunTest() {
@@ -152,6 +174,22 @@ void TestView::onRunTest() {
                 for (int i = 0; i < testSize; ++i) data[i] = chars[i % 7];
             }
             m_resultArea->append("测试类型: <b>少量字符重复 (100KB)</b>");
+            break;
+        case 4: // 人工输入
+            {
+                QString text = m_manualInput->text();
+                if (text.isEmpty()) {
+                    m_resultArea->append("<span style='color: red;'>错误: 请输入测试文本！</span>");
+                    m_runBtn->setEnabled(true);
+                    m_progressBar->hide();
+                    return;
+                }
+                QByteArray bytes = text.toUtf8();
+                testSize = bytes.size();
+                data.resize(testSize);
+                memcpy(data.data(), bytes.data(), testSize);
+                m_resultArea->append(QString("测试类型: <b>人工输入数据 (%1 字节)</b>").arg(testSize));
+            }
             break;
     }
 
@@ -198,6 +236,27 @@ void TestView::onRunTest() {
     
     m_runBtn->setEnabled(true);
     m_progressBar->hide();
+}
+
+void TestView::onSaveResult() {
+    QString fileName = QFileDialog::getSaveFileName(this, "保存测试日志", "", "Text Files (*.txt);;All Files (*)");
+    if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << m_resultArea->toPlainText();
+        file.close();
+    }
+}
+
+void TestView::onTestTypeChanged(int index) {
+    int testType = m_testTypeCombo->itemData(index).toInt();
+    if (testType == 4) {
+        m_manualInput->show();
+    } else {
+        m_manualInput->hide();
+    }
 }
 
 }
