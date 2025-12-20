@@ -146,7 +146,8 @@ void CompressCommand::execute() {
 
         if (m_progressCallback) {
             float p = 0.5f + 0.5f * (float)i / fileCount;
-            std::string name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().string();
+            std::u8string u8Name = std::filesystem::path((const char8_t*)m_model->getFile(i).getFilePath().c_str()).filename().u8string();
+            std::string name(reinterpret_cast<const char*>(u8Name.c_str()));
             m_progressCallback(p, "Compressing: " + name);
         }
         Model::FileRecord& record = m_model->getFile(i);

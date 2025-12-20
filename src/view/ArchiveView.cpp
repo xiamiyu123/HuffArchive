@@ -5,6 +5,7 @@
 #include "command/AddFileCommand.h"
 #include "view/ArchivePropertiesDialog.h"
 #include "util/CryptoUtils.h"
+#include <QCoreApplication>
 #include <QIcon>
 #include <QFileInfo>
 #include <QDateTime>
@@ -164,7 +165,7 @@ void ArchiveView::setupToolBar() {
     
     m_pathEdit = new QLineEdit(this);
     m_pathEdit->setReadOnly(true);
-    m_pathEdit->setText(QString::fromStdString(m_archivePath.c_str()));
+    m_pathEdit->setText(QString::fromUtf8(m_archivePath.c_str()));
     m_pathEdit->setStyleSheet(
         "QLineEdit { "
         "   border: 1px solid #E0E0E0; "
@@ -262,7 +263,7 @@ void ArchiveView::loadArchive() {
     // 读取压缩文件头信息
     std::ifstream inFile(std::filesystem::path(reinterpret_cast<const char8_t*>(m_archivePath.c_str())), std::ios::binary);
     if (!inFile) {
-        m_statusLabel->setText("无法打开文件: " + QString::fromStdString(m_archivePath.c_str()));
+        m_statusLabel->setText("无法打开文件: " + QString::fromUtf8(m_archivePath.c_str()));
         return;
     }
     
@@ -301,7 +302,7 @@ void ArchiveView::loadArchive() {
 
         // 验证密码
         unsigned char computedHash[16];
-        Util::CryptoUtils::hashPassword(password.toStdString(), reinterpret_cast<const unsigned char*>(salt), computedHash);
+        Util::CryptoUtils::hashPassword(password.toUtf8().constData(), reinterpret_cast<const unsigned char*>(salt), computedHash);
         
         if (memcmp(fileHash, computedHash, 16) != 0) {
             QMessageBox::critical(this, "错误", "密码错误！");
@@ -311,10 +312,10 @@ void ArchiveView::loadArchive() {
         }
 
         // 初始化 Cipher
-        cipher = new Util::CryptoUtils::StreamCipher(password.toStdString(), reinterpret_cast<const unsigned char*>(salt));
+        cipher = new Util::CryptoUtils::StreamCipher(password.toUtf8().constData(), reinterpret_cast<const unsigned char*>(salt));
         
         // 保存密码供后续解压使用
-        m_password = password.toStdString();
+        m_password = password.toUtf8().constData();
     }
 
     auto readEncrypted = [&](char* buf, size_t size) {
@@ -386,7 +387,7 @@ void ArchiveView::loadArchive() {
 }
 
 void ArchiveView::onExtract() {
-    QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
+    QString qArchivePath = QString::fromUtf8(m_archivePath.c_str());
     DecompressDialog dialog(qArchivePath, this);
     dialog.setPassword(m_password);
     
@@ -406,11 +407,11 @@ void ArchiveView::onExtractSelected() {
     Structure::ArrayList<Structure::String> filesToExtract;
     for (QTreeWidgetItem* item : selectedItems) {
         QString relativePath = item->text(0);  // 第一列是名称（相对路径）
-        filesToExtract.add(Structure::String(relativePath.toStdString().c_str()));
+        filesToExtract.add(Structure::String(relativePath.toUtf8().constData()));
     }
     
     // 弹出解压对话框
-    QString qArchivePath = QString::fromStdString(m_archivePath.c_str());
+    QString qArchivePath = QString::fromUtf8(m_archivePath.c_str());
     DecompressDialog dialog(qArchivePath, this);
     dialog.setFilesToExtract(filesToExtract);
     dialog.setPassword(m_password);
@@ -425,7 +426,7 @@ void ArchiveView::onAdd() {
 
     Structure::ArrayList<Structure::String> newFiles;
     for (const QString& f : files) {
-        newFiles.add(Structure::String(f.toStdString().c_str()));
+        newFiles.add(Structure::String(f.toUtf8().constData()));
     }
 
     QProgressDialog progress("正在准备...", "取消", 0, 100, this);
@@ -439,7 +440,7 @@ void ArchiveView::onAdd() {
     
     cmd.setProgressCallback([&progress](float p, const std::string& msg) {
         QMetaObject::invokeMethod(&progress, "setValue", Qt::QueuedConnection, Q_ARG(int, (int)(p * 100)));
-        QMetaObject::invokeMethod(&progress, "setLabelText", Qt::QueuedConnection, Q_ARG(QString, QString::fromStdString(msg)));
+        QMetaObject::invokeMethod(&progress, "setLabelText", Qt::QueuedConnection, Q_ARG(QString, QString::fromUtf8(msg.c_str())));
     });
     
     cmd.setCheckCancelCallback([&progress]() {
@@ -491,7 +492,7 @@ void ArchiveView::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
     
     // 获取相对路径
     QString relativePath = item->text(0);
-    extractAndOpenFile(Structure::String(relativePath.toStdString().c_str()));
+    extractAndOpenFile(Structure::String(relativePath.toUtf8().constData()));
 }
 
 void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
@@ -504,8 +505,9 @@ void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
     m_fileList->setEnabled(false);
 
     // Prepare parameters for the thread
-    // Use absolute path for temp dir to avoid issues
-    std::filesystem::path tempDir = std::filesystem::current_path() / "data" / "tmp";
+    // Use system temp directory to avoid permission issues in Release/Packaged mode
+    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/HuffmanTool/tmp";
+    std::filesystem::path tempDir = std::filesystem::path(reinterpret_cast<const char8_t*>(tempPath.toUtf8().constData()));
     std::error_code ec;
     std::filesystem::create_directories(tempDir, ec);
     
@@ -561,14 +563,14 @@ void ArchiveView::onOpenFileFinished() {
 
     auto result = m_openFileWatcher.result();
     if (result.first) {
-        QString extractedPath = QString::fromStdString(result.second);
+        QString extractedPath = QString::fromUtf8(result.second.c_str());
         if (!QDesktopServices::openUrl(QUrl::fromLocalFile(extractedPath))) {
              QMessageBox::warning(this, tr("错误"), 
                 tr("无法打开文件: %1").arg(extractedPath));
         }
     } else {
         QMessageBox::warning(this, tr("错误"), 
-            tr("无法解压文件: %1").arg(QString::fromStdString(result.second)));
+            tr("无法解压文件: %1").arg(QString::fromUtf8(result.second.c_str())));
     }
 }
 

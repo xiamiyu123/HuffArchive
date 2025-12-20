@@ -251,8 +251,8 @@ void DecompressDialog::onExtract() {
     // Start Thread
     m_workerThread = new QThread;
     m_worker = new DecompressionWorker(
-        Structure::String(m_archiveName.toStdString().c_str()),
-        Structure::String(destPath.toStdString().c_str()),
+        Structure::String(m_archiveName.toUtf8().constData()),
+        Structure::String(destPath.toUtf8().constData()),
         m_password,
         m_filesToExtract
     );
@@ -316,7 +316,7 @@ void DecompressDialog::onDecompressionFinished(bool success, QString message) {
 }
 
 Structure::String DecompressDialog::getDestinationPath() const {
-    return Structure::String(m_destPathEdit->text().toStdString().c_str());
+    return Structure::String(m_destPathEdit->text().toUtf8().constData());
 }
 
 bool DecompressDialog::shouldOpenFolder() const {

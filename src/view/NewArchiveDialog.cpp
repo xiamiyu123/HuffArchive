@@ -30,7 +30,7 @@ public slots:
         }
         
         cmd.setProgressCallback([this](float p, const std::string& msg) {
-            emit progress(static_cast<int>(p * 100), QString::fromStdString(msg));
+            emit progress(static_cast<int>(p * 100), QString::fromUtf8(msg.c_str()));
         });
         
         cmd.setCheckCancelCallback([this]() {
@@ -38,7 +38,7 @@ public slots:
         });
         
         bool success = cmd.execute();
-        emit finished(success, QString::fromStdString(cmd.getErrorMessage().c_str()));
+        emit finished(success, QString::fromUtf8(cmd.getErrorMessage().c_str()));
     }
 
 signals:
@@ -318,7 +318,7 @@ void NewArchiveDialog::dropEvent(QDropEvent *event) {
         for (const QUrl& url : urlList) {
             QString path = url.toLocalFile();
             if (!path.isEmpty()) {
-                m_selectedFiles.add(Structure::String(path.toStdString().c_str()));
+                m_selectedFiles.add(Structure::String(path.toUtf8().constData()));
             }
         }
         updateFileTable();
@@ -329,7 +329,7 @@ void NewArchiveDialog::updateFileTable() {
     m_fileTable->setRowCount(0);
     
     for (int i = 0; i < m_selectedFiles.size(); ++i) {
-        QString path = QString::fromStdString(m_selectedFiles[i].c_str());
+        QString path = QString::fromUtf8(m_selectedFiles[i].c_str());
         QFileInfo info(path);
         
         int row = m_fileTable->rowCount();
@@ -357,7 +357,7 @@ void NewArchiveDialog::onAddFiles() {
     QStringList files = QFileDialog::getOpenFileNames(this, "选择文件", QString(), "所有文件 (*.*)");
     if (!files.isEmpty()) {
         for (const QString& file : files) {
-            m_selectedFiles.add(Structure::String(file.toStdString().c_str()));
+            m_selectedFiles.add(Structure::String(file.toUtf8().constData()));
         }
         updateFileTable();
     }
@@ -366,7 +366,7 @@ void NewArchiveDialog::onAddFiles() {
 void NewArchiveDialog::onAddFolder() {
     QString folder = QFileDialog::getExistingDirectory(this, "选择文件夹");
     if (!folder.isEmpty()) {
-        m_selectedFiles.add(Structure::String(folder.toStdString().c_str()));
+        m_selectedFiles.add(Structure::String(folder.toUtf8().constData()));
         updateFileTable();
     }
 }
@@ -416,7 +416,7 @@ void NewArchiveDialog::onCompress() {
         return;
     }
     
-    Structure::String outputPath(destPath.toStdString().c_str());
+    Structure::String outputPath(destPath.toUtf8().constData());
     Structure::String password;
     if (m_usePasswordCheck->isChecked()) {
         QString pwd = m_passwordEdit->text();
@@ -424,7 +424,7 @@ void NewArchiveDialog::onCompress() {
             QMessageBox::warning(this, "提示", "请输入密码！");
             return;
         }
-        password = Structure::String(pwd.toStdString().c_str());
+        password = Structure::String(pwd.toUtf8().constData());
     }
     
     // 更新 UI 状态
@@ -521,7 +521,7 @@ void NewArchiveDialog::onCompressionFinished(bool success, QString msg) {
 }
 
 Structure::String NewArchiveDialog::getArchivePath() const {
-    return Structure::String(m_destPathEdit->text().toStdString().c_str());
+    return Structure::String(m_destPathEdit->text().toUtf8().constData());
 }
 
 Structure::ArrayList<Structure::String> NewArchiveDialog::getFilesToCompress() const {

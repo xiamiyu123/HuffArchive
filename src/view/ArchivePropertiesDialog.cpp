@@ -49,7 +49,7 @@ void ArchivePropertiesDialog::setupUI() {
 
 void ArchivePropertiesDialog::loadProperties() {
     // 获取文件基本信息
-    QFileInfo fileInfo(QString::fromStdString(m_archivePath.c_str()));
+    QFileInfo fileInfo(QString::fromUtf8(m_archivePath.c_str()));
     m_nameLabel->setText(fileInfo.fileName());
     m_sizeLabel->setText(QString::number(fileInfo.size() / 1024.0, 'f', 1) + " KB");
     m_createdTimeLabel->setText(fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss"));

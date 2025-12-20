@@ -21,7 +21,7 @@ FileRecord::FileRecord(const Structure::String& filePath, FileType type)
     // 如果是普通文件，尝试自动获取大小
     if (m_type == FileType::File && !m_filePath.empty()) {
         try {
-            std::filesystem::path p(m_filePath.c_str());
+            std::filesystem::path p(reinterpret_cast<const char8_t*>(m_filePath.c_str()));
             if (std::filesystem::exists(p) && std::filesystem::is_regular_file(p)) {
                 m_originalSize = static_cast<long long>(std::filesystem::file_size(p));
             }
@@ -39,9 +39,10 @@ Structure::String FileRecord::getFilePath() const {
 Structure::String FileRecord::getFileName() const {
     if (m_filePath.empty()) return "";
     try {
-        std::filesystem::path p(m_filePath.c_str());
+        std::filesystem::path p(reinterpret_cast<const char8_t*>(m_filePath.c_str()));
         // filename() 返回文件名+扩展名
-        return Structure::String(p.filename().string().c_str());
+        std::u8string u8Name = p.filename().u8string();
+        return Structure::String(reinterpret_cast<const char*>(u8Name.c_str()));
     } catch (...) {
         return "";
     }

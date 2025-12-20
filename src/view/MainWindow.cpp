@@ -184,7 +184,7 @@ void MainWindow::showArchiveView(const QString& archivePath) {
     }
     
     // 创建新的 ArchiveView
-    m_archiveView = new ArchiveView(Structure::String(archivePath.toStdString().c_str()), this);
+    m_archiveView = new ArchiveView(Structure::String(archivePath.toUtf8().constData()), this);
     m_stackedWidget->addWidget(m_archiveView);
     m_stackedWidget->setCurrentWidget(m_archiveView);
     
@@ -301,7 +301,7 @@ void MainWindow::onNewArchive() {
         // 压缩已经在对话框中完成
         // 获取生成的归档文件路径并打开
         Structure::String archivePath = dialog.getArchivePath();
-        QString qArchivePath = QString::fromStdString(archivePath.c_str());
+        QString qArchivePath = QString::fromUtf8(archivePath.c_str());
         
         if (QFileInfo::exists(qArchivePath)) {
             showArchiveView(qArchivePath);

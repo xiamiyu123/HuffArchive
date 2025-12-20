@@ -14,8 +14,8 @@ HistoryManager& HistoryManager::instance() {
 }
 
 HistoryManager::HistoryManager() {
-    // 确保数据目录相对于应用程序可执行文件存在
-    QString dataPath = QCoreApplication::applicationDirPath() + "/data";
+    // 使用系统标准的可写数据目录，避免在 Release/打包模式下因权限问题无法保存历史记录
+    QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir dir(dataPath);
     if (!dir.exists()) {
         dir.mkpath(".");

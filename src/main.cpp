@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QPalette>
+#include <QStandardPaths>
 #include <filesystem>
 #include "view/MainWindow.h"
 
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
     // 检查命令行参数，如果有文件路径则直接打开
     if (argc > 1) {
         QString filePath = QString::fromLocal8Bit(argv[1]);
-        std::string u8Path = filePath.toStdString();
+        std::string u8Path = filePath.toUtf8().constData();
         if (std::filesystem::exists(std::filesystem::path(reinterpret_cast<const char8_t*>(u8Path.c_str())))) {
             mainWindow.showArchiveView(filePath);
         }
@@ -50,7 +51,8 @@ int main(int argc, char *argv[]) {
 
     // 清理临时目录
     std::error_code ec;
-    std::filesystem::path tempDir = std::filesystem::current_path() / "data" / "tmp";
+    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/HuffmanTool/tmp";
+    std::filesystem::path tempDir = std::filesystem::path(reinterpret_cast<const char8_t*>(tempPath.toUtf8().constData()));
     if (std::filesystem::exists(tempDir)) {
         std::filesystem::remove_all(tempDir, ec);
     }
