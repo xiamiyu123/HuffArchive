@@ -1,6 +1,8 @@
 #include "view/TestView.h"
 #include "structure/HuffmanTree.h"
 #include "structure/HashMap.h"
+#include "view/TreeVisualizer.h"
+#include "view/CodeTableView.h"
 #include <QElapsedTimer>
 #include <QApplication>
 #include <random>
@@ -16,110 +18,145 @@ TestView::~TestView() {}
 
 void TestView::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(40, 40, 40, 40);
-    m_mainLayout->setSpacing(20);
+    m_mainLayout->setContentsMargins(20, 20, 20, 20);
+    m_mainLayout->setSpacing(15);
 
-    m_titleLabel = new QLabel("性能测试与诊断", this);
+    // 标题栏
+    QHBoxLayout* headerLayout = new QHBoxLayout();
+    m_titleLabel = new QLabel("算法测试与可视化诊断", this);
     QFont titleFont = m_titleLabel->font();
-    titleFont.setPointSize(18);
+    titleFont.setPointSize(16);
     titleFont.setBold(true);
     m_titleLabel->setFont(titleFont);
-    m_mainLayout->addWidget(m_titleLabel);
-
-    QLabel* descLabel = new QLabel("在此页面您可以测试哈夫曼算法在当前硬件上的性能表现。", this);
-    descLabel->setStyleSheet("color: #5F6368;");
-    m_mainLayout->addWidget(descLabel);
-
-    QHBoxLayout* ctrlLayout = new QHBoxLayout();
-    m_runBtn = new QPushButton("开始随机数据压缩测试 (5MB)", this);
-    m_runBtn->setMinimumHeight(40);
-    m_runBtn->setCursor(Qt::PointingHandCursor);
-    m_runBtn->setStyleSheet(
-        "QPushButton { "
-        "   background: #1A73E8; "
-        "   color: white; "
-        "   border-radius: 6px; "
-        "   padding: 0 20px; "
-        "   font-weight: bold; "
-        "   font-size: 14px;"
-        "}"
-        "QPushButton:hover { background: #1557B0; }"
-        "QPushButton:pressed { background: #174EA6; }"
-        "QPushButton:disabled { background: #E0E0E0; color: #9E9E9E; }"
-    );
+    headerLayout->addWidget(m_titleLabel);
+    headerLayout->addStretch();
     
     m_backBtn = new QPushButton("返回主页", this);
-    m_backBtn->setMinimumHeight(40);
+    m_backBtn->setFixedSize(100, 36);
     m_backBtn->setCursor(Qt::PointingHandCursor);
     m_backBtn->setStyleSheet(
-        "QPushButton { "
-        "   border: 1px solid #DADCE0; "
-        "   border-radius: 6px; "
-        "   padding: 0 20px; "
-        "   background: #FFFFFF; "
-        "   color: #3C4043; "
-        "   font-weight: 500;"
-        "}"
+        "QPushButton { border: 1px solid #DADCE0; border-radius: 4px; background: white; color: #3C4043; }"
         "QPushButton:hover { background: #F8F9FA; }"
     );
+    headerLayout->addWidget(m_backBtn);
+    m_mainLayout->addLayout(headerLayout);
+
+    // 控制栏
+    QHBoxLayout* ctrlLayout = new QHBoxLayout();
     
+    QLabel* typeLabel = new QLabel("测试类型:", this);
+    ctrlLayout->addWidget(typeLabel);
+
+    m_testTypeCombo = new QComboBox(this);
+    m_testTypeCombo->addItem("随机数据测试 (5MB)", 0);
+    m_testTypeCombo->addItem("全零数据测试 (1MB)", 1);
+    m_testTypeCombo->addItem("递增序列测试 (1MB)", 2);
+    m_testTypeCombo->addItem("少量字符重复测试 (100KB)", 3);
+    m_testTypeCombo->setFixedWidth(200);
+    m_testTypeCombo->setStyleSheet("QComboBox { padding: 5px; border: 1px solid #DADCE0; border-radius: 4px; }");
+    ctrlLayout->addWidget(m_testTypeCombo);
+
+    m_runBtn = new QPushButton("开始测试", this);
+    m_runBtn->setFixedSize(120, 36);
+    m_runBtn->setCursor(Qt::PointingHandCursor);
+    m_runBtn->setStyleSheet(
+        "QPushButton { background: #1A73E8; color: white; border-radius: 4px; font-weight: bold; }"
+        "QPushButton:hover { background: #1557B0; }"
+        "QPushButton:disabled { background: #E0E0E0; color: #9E9E9E; }"
+    );
     ctrlLayout->addWidget(m_runBtn);
-    ctrlLayout->addWidget(m_backBtn);
     ctrlLayout->addStretch();
     m_mainLayout->addLayout(ctrlLayout);
 
+    // 进度条
     m_progressBar = new QProgressBar(this);
     m_progressBar->setRange(0, 100);
     m_progressBar->setValue(0);
-    m_progressBar->setFixedHeight(8);
+    m_progressBar->setFixedHeight(4);
     m_progressBar->setTextVisible(false);
     m_progressBar->setStyleSheet(
-        "QProgressBar { border: none; background: #E0E0E0; border-radius: 4px; }"
-        "QProgressBar::chunk { background: #1A73E8; border-radius: 4px; }"
+        "QProgressBar { border: none; background: #E0E0E0; border-radius: 2px; }"
+        "QProgressBar::chunk { background: #1A73E8; border-radius: 2px; }"
     );
     m_progressBar->hide();
     m_mainLayout->addWidget(m_progressBar);
 
+    // 选项卡界面
+    m_tabWidget = new QTabWidget(this);
+    m_tabWidget->setStyleSheet(
+        "QTabWidget::pane { border: 1px solid #DADCE0; border-radius: 4px; background: white; }"
+        "QTabBar::tab { padding: 10px 20px; background: #F8F9FA; border: 1px solid #DADCE0; border-bottom: none; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-right: 2px; }"
+        "QTabBar::tab:selected { background: white; border-bottom: 2px solid #1A73E8; font-weight: bold; }"
+    );
+
+    // 1. 运行日志
     m_resultArea = new QTextEdit(this);
     m_resultArea->setReadOnly(true);
     m_resultArea->setPlaceholderText("测试结果将显示在这里...");
-    m_resultArea->setStyleSheet(
-        "QTextEdit { "
-        "   background: #F8F9FA; "
-        "   border: 1px solid #E0E0E0; "
-        "   border-radius: 8px; "
-        "   padding: 15px; "
-        "   font-family: 'Consolas', 'Courier New', monospace; "
-        "   font-size: 13px; "
-        "   line-height: 1.5;"
-        "}"
-    );
-    m_mainLayout->addWidget(m_resultArea);
+    m_resultArea->setStyleSheet("QTextEdit { border: none; font-family: 'Consolas', monospace; font-size: 12px; }");
+    m_tabWidget->addTab(m_resultArea, "运行日志");
 
-    connect(m_runBtn, &QPushButton::clicked, this, &TestView::onRunSpeedTest);
+    // 2. 树可视化
+    m_treeVisualizer = new TreeVisualizer(this);
+    m_tabWidget->addTab(m_treeVisualizer, "哈夫曼树预览");
+
+    // 3. 编码表
+    m_codeTableView = new CodeTableView(this);
+    m_tabWidget->addTab(m_codeTableView, "编码详情");
+
+    m_mainLayout->addWidget(m_tabWidget);
+
+    connect(m_runBtn, &QPushButton::clicked, this, &TestView::onRunTest);
     connect(m_backBtn, &QPushButton::clicked, this, &TestView::backRequested);
 }
 
-void TestView::onRunSpeedTest() {
+void TestView::onRunTest() {
     m_runBtn->setEnabled(false);
     m_resultArea->clear();
     m_progressBar->show();
     m_progressBar->setValue(0);
+    m_treeVisualizer->setTree(nullptr);
+    m_codeTableView->clear();
     
-    const int testSize = 5 * 1024 * 1024;
-    m_resultArea->append(QString("<span style='color: #1A73E8;'>[1/4]</span> 正在生成 %1 字节的随机数据...").arg(testSize));
-    QApplication::processEvents();
+    int testType = m_testTypeCombo->currentData().toInt();
+    int testSize = 0;
+    std::vector<unsigned char> data;
 
-    std::vector<unsigned char> data(testSize);
-    std::mt19937 gen(std::random_device{}());
-    std::uniform_int_distribution<> dis(0, 255);
-    for (int i = 0; i < testSize; ++i) {
-        data[i] = static_cast<unsigned char>(dis(gen));
+    switch(testType) {
+        case 0: // 随机
+            testSize = 5 * 1024 * 1024;
+            data.resize(testSize);
+            {
+                std::mt19937 gen(std::random_device{}());
+                std::uniform_int_distribution<> dis(0, 255);
+                for (int i = 0; i < testSize; ++i) data[i] = static_cast<unsigned char>(dis(gen));
+            }
+            m_resultArea->append("测试类型: <b>随机数据 (5MB)</b>");
+            break;
+        case 1: // 全零
+            testSize = 1 * 1024 * 1024;
+            data.assign(testSize, 0);
+            m_resultArea->append("测试类型: <b>全零数据 (1MB)</b>");
+            break;
+        case 2: // 递增
+            testSize = 1 * 1024 * 1024;
+            data.resize(testSize);
+            for (int i = 0; i < testSize; ++i) data[i] = static_cast<unsigned char>(i % 256);
+            m_resultArea->append("测试类型: <b>递增序列 (1MB)</b>");
+            break;
+        case 3: // 少量字符
+            testSize = 100 * 1024;
+            data.resize(testSize);
+            {
+                const char* chars = "ABCDEFG";
+                for (int i = 0; i < testSize; ++i) data[i] = chars[i % 7];
+            }
+            m_resultArea->append("测试类型: <b>少量字符重复 (100KB)</b>");
+            break;
     }
-    
-    m_progressBar->setValue(30);
-    m_resultArea->append("<span style='color: #1A73E8;'>[2/4]</span> 数据生成完毕，开始频率统计...");
+
     QApplication::processEvents();
+    m_progressBar->setValue(20);
 
     QElapsedTimer timer;
     timer.start();
@@ -131,40 +168,37 @@ void TestView::onRunSpeedTest() {
         else freqMap.put(c, 1);
     }
     qint64 freqTime = timer.elapsed();
-    m_progressBar->setValue(60);
-    m_resultArea->append(QString("      - 频率统计耗时: %1 ms").arg(freqTime));
+    m_progressBar->setValue(50);
+    m_resultArea->append(QString(" - 频率统计耗时: %1 ms").arg(freqTime));
     QApplication::processEvents();
 
     // 2. 建树
-    m_resultArea->append("<span style='color: #1A73E8;'>[3/4]</span> 正在构建哈夫曼树...");
-    QElapsedTimer treeTimer;
-    treeTimer.start();
-    Structure::HuffmanTree tree;
-    tree.build(freqMap);
-    qint64 treeTime = treeTimer.elapsed();
+    Structure::HuffmanTree* tree = new Structure::HuffmanTree();
+    tree->build(freqMap);
+    qint64 treeTime = timer.elapsed() - freqTime;
     m_progressBar->setValue(80);
-    m_resultArea->append(QString("      - 哈夫曼树构建耗时: %1 ms").arg(treeTime));
+    m_resultArea->append(QString(" - 哈夫曼树构建耗时: %1 ms").arg(treeTime));
     QApplication::processEvents();
 
     // 3. 编码表
-    m_resultArea->append("<span style='color: #1A73E8;'>[4/4]</span> 正在生成编码表...");
-    QElapsedTimer codeTimer;
-    codeTimer.start();
-    tree.generateCodes();
-    qint64 codeTime = codeTimer.elapsed();
+    Structure::HashMap<unsigned char, Structure::String> codes = tree->generateCodes();
+    qint64 codeTime = timer.elapsed() - freqTime - treeTime;
     m_progressBar->setValue(100);
-    m_resultArea->append(QString("      - 编码表生成耗时: %1 ms").arg(codeTime));
+    m_resultArea->append(QString(" - 编码表生成耗时: %1 ms").arg(codeTime));
     
     qint64 totalElapsed = timer.elapsed();
     double speed = (testSize / 1024.0 / 1024.0) / (totalElapsed / 1000.0 + 0.001);
 
-    m_resultArea->append("\n<b style='color: #202124;'>测试总结:</b>");
-    m_resultArea->append(QString("--------------------------------"));
-    m_resultArea->append(QString("总处理耗时: <b style='color: #1A73E8;'>%1 ms</b>").arg(totalElapsed));
-    m_resultArea->append(QString("平均处理速度: <b style='color: #1A73E8;'>%1 MB/s</b>").arg(speed, 0, 'f', 2));
-    m_resultArea->append(QString("--------------------------------\n"));
+    m_resultArea->append(QString("\n<b>总耗时: %1 ms</b>").arg(totalElapsed));
+    m_resultArea->append(QString("<b>平均速度: %1 MB/s</b>").arg(speed, 0, 'f', 2));
+    
+    // 更新可视化
+    m_treeVisualizer->setTree(tree);
+    m_codeTableView->updateTable(freqMap, codes);
     
     m_runBtn->setEnabled(true);
+    m_progressBar->hide();
 }
 
 }
+
