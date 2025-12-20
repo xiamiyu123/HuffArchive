@@ -110,7 +110,7 @@ target_compile_definitions(HuffmanCore PUBLIC
 # ==========================================
 # 主程序
 # ==========================================
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} WIN32 src/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE HuffmanCore)
 
