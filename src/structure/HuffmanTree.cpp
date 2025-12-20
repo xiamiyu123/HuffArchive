@@ -36,9 +36,9 @@ void HuffmanTree::build(const MapHuff<unsigned char, int>& frequencyMap) {
         i++;
     });
 
-    // Sort leaf nodes by data to ensure deterministic tree construction
-    // This is crucial because HashMap iteration order might vary, leading to different
-    // tree structures if we don't enforce a deterministic order for leaves.
+    // 按数据对叶子节点进行排序，以确保哈夫曼树的构建是确定性的
+    // 这非常重要，因为 HashMap 的迭代顺序可能会有所不同，
+    // 如果不对叶子节点强制执行确定性顺序，可能会导致不同的树结构。
     if (n > 0) {
         for (int j = 0; j < n - 1; ++j) {
             for (int k = 0; k < n - j - 1; ++k) {

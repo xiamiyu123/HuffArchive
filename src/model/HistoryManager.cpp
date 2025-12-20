@@ -14,7 +14,7 @@ HistoryManager& HistoryManager::instance() {
 }
 
 HistoryManager::HistoryManager() {
-    // Ensure data directory exists relative to application executable
+    // 确保数据目录相对于应用程序可执行文件存在
     QString dataPath = QCoreApplication::applicationDirPath() + "/data";
     QDir dir(dataPath);
     if (!dir.exists()) {
@@ -25,7 +25,7 @@ HistoryManager::HistoryManager() {
 }
 
 void HistoryManager::addHistory(const Structure::String& path) {
-    // Remove if already exists to move it to the top
+    // 如果已存在则移除，以便将其移动到顶部
     for (int i = 0; i < m_historyList.size(); ++i) {
         if (m_historyList[i] == path) {
             m_historyList.remove(i);
@@ -35,7 +35,7 @@ void HistoryManager::addHistory(const Structure::String& path) {
     
     m_historyList.insert(0, path);
 
-    // Limit size
+    // 限制大小
     while (m_historyList.size() > MAX_HISTORY_SIZE) {
         m_historyList.remove(m_historyList.size() - 1);
     }
@@ -48,7 +48,7 @@ Structure::ArrayList<Structure::String> HistoryManager::getHistory() const {
 }
 
 void HistoryManager::loadHistory() {
-    // Clear list (re-assign empty)
+    // 清空列表（重新分配为空）
     m_historyList = Structure::ArrayList<Structure::String>();
     
     QFile file(QString::fromUtf8(m_historyFilePath.c_str()));

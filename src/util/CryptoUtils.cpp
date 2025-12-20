@@ -15,7 +15,7 @@ void CryptoUtils::generateSalt(unsigned char* salt) {
 }
 
 void CryptoUtils::hashPassword(const std::string& password, const unsigned char* salt, unsigned char* hash) {
-    // Simple hash function: FNV-1a mixed with salt
+    // 简单的哈希函数：FNV-1a 混合盐值
     uint64_t h = 14695981039346656037ULL;
     const uint64_t prime = 1099511628211ULL;
 
@@ -31,13 +31,13 @@ void CryptoUtils::hashPassword(const std::string& password, const unsigned char*
         update(salt[i]);
     }
 
-    // Fold 64-bit hash into 16 bytes (repeated)
-    // To make it slightly more robust, we'll run a few rounds
+    // 将 64 位哈希折叠成 16 字节（重复）
+    // 为了使其稍微更健壮，我们将运行几轮
     for (int round = 0; round < 100; ++round) {
         update(static_cast<unsigned char>(h & 0xFF));
     }
 
-    // Fill the 16-byte hash buffer
+    // 填充 16 字节的哈希缓冲区
     std::mt19937 gen(static_cast<unsigned int>(h));
     std::uniform_int_distribution<> dis(0, 255);
     for (int i = 0; i < HASH_SIZE; ++i) {
@@ -46,11 +46,11 @@ void CryptoUtils::hashPassword(const std::string& password, const unsigned char*
 }
 
 CryptoUtils::StreamCipher::StreamCipher(const std::string& password, const unsigned char* salt) {
-    // Seed the PRNG with the hash of password + salt
+    // 使用密码 + 盐值的哈希值作为 PRNG 的种子
     unsigned char hash[HASH_SIZE];
     CryptoUtils::hashPassword(password, salt, hash);
     
-    // Create a seed sequence from the hash
+    // 从哈希值创建种子序列
     std::vector<unsigned int> seedData;
     for (int i = 0; i < HASH_SIZE; i += 4) {
         unsigned int val = 0;

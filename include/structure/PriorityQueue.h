@@ -1,7 +1,7 @@
 #pragma once
 #include "ArrayList.h"
 #include <functional>
-#include <utility> // for std::swap
+#include <utility> // 用于 std::swap
 
 namespace Structure {
 

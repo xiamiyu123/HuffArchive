@@ -14,7 +14,7 @@ public:
     CompressCommand(Model::DataModel* model, const Structure::String& outputPath);
     ~CompressCommand();
 
-    // Execute compression
+    // 执行压缩
     void execute();
 
     void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }

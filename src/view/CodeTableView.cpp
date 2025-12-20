@@ -11,7 +11,7 @@ CodeTableView::CodeTableView(QWidget *parent) : QWidget(parent) {
 }
 
 CodeTableView::~CodeTableView() {
-    // QObject cleanup handles children
+    // QObject 清理会自动处理子对象
 }
 
 void CodeTableView::setupUi() {

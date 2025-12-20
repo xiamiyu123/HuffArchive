@@ -28,7 +28,7 @@ void TreeVisualizer::paintEvent(QPaintEvent *event) {
     int rootIndex = m_tree->getRootIndex();
     if (rootIndex == -1) return;
 
-    // Start drawing from the top center
+    // 从顶部中心开始绘制
     drawNode(painter, rootIndex, width() / 2, 40, width() / 4);
 }
 
@@ -40,7 +40,7 @@ void TreeVisualizer::drawNode(QPainter& painter, int nodeIndex, int x, int y, in
     int vGap = 60;
     int radius = 20;
 
-    // Draw connections first so they are behind nodes
+    // 先绘制连接线，使其位于节点后面
     if (node.lchild != -1) {
         painter.drawLine(x, y, x - hGap, y + vGap);
         drawNode(painter, node.lchild, x - hGap, y + vGap, hGap / 2);
@@ -50,15 +50,15 @@ void TreeVisualizer::drawNode(QPainter& painter, int nodeIndex, int x, int y, in
         drawNode(painter, node.rchild, x + hGap, y + vGap, hGap / 2);
     }
 
-    // Draw node
+    // 绘制节点
     painter.setBrush(Qt::white);
     painter.setPen(Qt::black);
     painter.drawEllipse(QPoint(x, y), radius, radius);
 
-    // Draw text (weight)
+    // 绘制文本（权重）
     QString text = QString::number(node.weight);
     
-    // If it's a leaf node, show the character
+    // 如果是叶子节点，显示字符
     if (node.lchild == -1 && node.rchild == -1) {
         unsigned char c = node.data;
         if (c >= 32 && c <= 126) {

@@ -36,7 +36,7 @@ private:
     void showWelcomeScreen();
     void updateHistoryUI();
     
-    // UI Components
+    // UI 组件
     QStackedWidget* m_stackedWidget;
     QWidget* m_welcomeWidget;
     QWidget* m_centralWidget;
@@ -50,14 +50,14 @@ private:
     ArchiveView* m_archiveView;
     TestView* m_testView;
     
-    // Menu components
+    // 菜单组件
     QMenu* m_fileMenu;
     QMenu* m_recentFilesMenu;
     QMenu* m_settingsMenu;
     QMenu* m_testMenu;
     QMenu* m_helpMenu;
     
-    // Actions
+    // 操作
     QAction* m_newAction;
     QAction* m_openAction;
     QAction* m_exitAction;

@@ -72,7 +72,7 @@ public:
     friend std::istream& operator>>(std::istream& is, String& str);
 };
 
-// Helper for QTest
+// QTest 辅助函数
 inline char* toString(const String& str) {
     int len = str.length();
     char* buffer = new char[len + 1];

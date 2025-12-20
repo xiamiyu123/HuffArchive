@@ -1,5 +1,5 @@
 //
-// Created by xiami on 2025/12/9.
+// 由 xiami 创建于 2025/12/9。
 //
 #include <QApplication>
 #include <QStyleFactory>

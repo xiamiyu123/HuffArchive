@@ -10,7 +10,7 @@ public:
     DecompressCommand(Model::DataModel* model, const Structure::String& inputPath, const Structure::String& outputDir, const std::string& password = "");
     ~DecompressCommand();
 
-    // Execute decompression
+    // 执行解压
     void execute();
 
     void setProgressCallback(std::function<void(float)> callback) { m_progressCallback = callback; }

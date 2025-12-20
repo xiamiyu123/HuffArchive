@@ -19,7 +19,7 @@ public:
         void process(char* buffer, size_t size);
         unsigned char processByte(unsigned char b);
         
-        // Save/Restore PRNG state
+        // 保存/恢复 PRNG 状态
         std::string saveState() const;
         void restoreState(const std::string& state);
 

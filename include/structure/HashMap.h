@@ -34,7 +34,7 @@ namespace Structure {
                 while (current) {
                     Entry* next = current->next;
                     
-                    // Re-hash
+                    // 重新哈希
                     int newIndex = std::hash<K>{}(current->first) % newCapacity;
                     current->next = newBuckets[newIndex];
                     newBuckets[newIndex] = current;
@@ -115,7 +115,7 @@ namespace Structure {
             Entry* current = m_buckets[index];
             while (current) {
                 if (current->first == key) {
-                    current->second = value; // Update
+                    current->second = value; // 更新
                     return;
                 }
                 current = current->next;

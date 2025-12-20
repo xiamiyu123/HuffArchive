@@ -57,7 +57,7 @@ bool SystemUtils::registerFileAssociation() {
 
     return true;
 #else
-    // Linux/Mac implementation would go here (e.g., .desktop files)
+    // Linux/Mac 的实现将放在这里（例如 .desktop 文件）
     return false;
 #endif
 }

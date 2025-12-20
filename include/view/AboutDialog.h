@@ -22,7 +22,7 @@ private:
     void setupUI();
     void setupConnections();
     
-    // UI Components
+    // UI 组件
     QVBoxLayout* m_mainLayout;
     QLabel* m_titleLabel;
     QLabel* m_versionLabel;

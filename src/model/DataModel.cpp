@@ -6,7 +6,7 @@ DataModel::DataModel() {
 }
 
 DataModel::~DataModel() {
-    m_files.clear(); // ArrayList destructor handles memory, but clear is good practice if it resets size
+    m_files.clear(); // ArrayList 析构函数处理内存，但如果 clear 能重置大小，则是良好的实践
 }
 
 void DataModel::addFile(const FileRecord& file) {

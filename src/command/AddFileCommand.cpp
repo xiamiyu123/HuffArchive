@@ -18,11 +18,11 @@ AddFileCommand::~AddFileCommand() {
 void AddFileCommand::execute() {
     if (!m_model) return;
 
-    // 1. Create temporary directory
+    // 1. 创建临时目录
     std::error_code ec;
     std::filesystem::path tempDir = std::filesystem::temp_directory_path(ec) / "huffman_add_temp";
     if (ec) {
-        // Fallback to current directory if temp fails
+        // 如果临时目录失败，回退到当前目录
         tempDir = "huffman_add_temp";
     }
 
@@ -33,12 +33,12 @@ void AddFileCommand::execute() {
     
     Structure::String tempDirStr(tempDir.string().c_str());
 
-    // 2. Decompress existing archive
-    if (m_progressCallback) m_progressCallback(0.0f, "Decompressing existing archive...");
+    // 2. 解压现有归档
+    if (m_progressCallback) m_progressCallback(0.0f, "正在解压现有归档...");
     
     DecompressCommand decompressCmd(m_model, m_archivePath, tempDirStr);
     decompressCmd.setProgressCallback([this](float p) {
-        if (m_progressCallback) m_progressCallback(p * 0.4f, "Decompressing...");
+        if (m_progressCallback) m_progressCallback(p * 0.4f, "正在解压...");
     });
     decompressCmd.setCheckCancelCallback(m_checkCancelCallback);
     decompressCmd.execute();
@@ -48,18 +48,18 @@ void AddFileCommand::execute() {
         return;
     }
 
-    // 3. Update file paths for decompressed files
+    // 3. 更新解压文件的文件路径
     int existingCount = m_model->getFileCount();
     for (int i = 0; i < existingCount; ++i) {
         Model::FileRecord& record = m_model->getFile(i);
-        // DecompressCommand sets RelativePath. We need to construct the full FilePath in temp dir.
+        // DecompressCommand 设置相对路径。我们需要在临时目录中构建完整的文件路径。
         std::filesystem::path relPath(reinterpret_cast<const char8_t*>(record.getRelativePath().c_str()));
         std::filesystem::path fullPath = tempDir / relPath;
         record.setFilePath(Structure::String(fullPath.string().c_str()));
-        record.setStatus(Model::FileStatus::Pending); // Reset status for compression
+        record.setStatus(Model::FileStatus::Pending); // 为压缩重置状态
     }
 
-    // 4. Add new files to model
+    // 4. 将新文件添加到模型
     for (int i = 0; i < m_newFiles.size(); ++i) {
         Structure::String newFilePath = m_newFiles[i];
         std::filesystem::path path(reinterpret_cast<const char8_t*>(newFilePath.c_str()));
@@ -71,10 +71,10 @@ void AddFileCommand::execute() {
         m_model->addFile(record);
     }
 
-    // 5. Compress everything to new archive
-    if (m_progressCallback) m_progressCallback(0.4f, "Compressing all files...");
+    // 5. 将所有内容压缩到新归档
+    if (m_progressCallback) m_progressCallback(0.4f, "正在压缩所有文件...");
 
-    // Use a temporary file for output to prevent data loss on cancel/failure
+    // 使用临时文件进行输出，以防止在取消/失败时丢失数据
     std::filesystem::path finalOutPath(reinterpret_cast<const char8_t*>(m_outputArchivePath.c_str()));
     std::filesystem::path tempOutPath = finalOutPath;
     tempOutPath += ".tmp";
@@ -87,12 +87,12 @@ void AddFileCommand::execute() {
     compressCmd.setCheckCancelCallback(m_checkCancelCallback);
     compressCmd.execute();
 
-    // 6. Cleanup and Finalize
+    // 6. 清理并完成
     if (m_checkCancelCallback && m_checkCancelCallback()) {
         std::filesystem::remove(tempOutPath, ec);
     } else {
-        // Success: Replace original file with new one
-        // On Windows, rename might fail if target exists, so remove it first
+        // 成功：用新文件替换原始文件
+        // 在 Windows 上，如果目标存在，重命名可能会失败，所以先删除它
         if (std::filesystem::exists(finalOutPath)) {
             std::filesystem::remove(finalOutPath, ec);
         }

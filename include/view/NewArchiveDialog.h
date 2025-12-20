@@ -39,21 +39,21 @@ private:
     void setupConnections();
     void updateFileTable();
     
-    // UI Components
+    // UI 组件
     QVBoxLayout* m_mainLayout;
     
-    // Header
+    // 标题
     QLabel* m_titleLabel;
     QLabel* m_subtitleLabel;
     
-    // File List
+    // 文件列表
     QTableWidget* m_fileTable;
     QPushButton* m_addFilesBtn;
     QPushButton* m_addFolderBtn;
     QPushButton* m_removeBtn;
     QPushButton* m_clearBtn;
     
-    // Settings
+    // 设置
     QLineEdit* m_destPathEdit;
     QPushButton* m_browseBtn;
     QComboBox* m_compressionLevelCombo;
@@ -62,18 +62,18 @@ private:
     QLineEdit* m_passwordEdit;    // 新增：密码输入框
     QCheckBox* m_showPasswordCheck; // 新增：显示密码选项
     
-    // Bottom
+    // 底部
     QPushButton* m_compressBtn;
     QPushButton* m_cancelBtn;
     
-    // Progress
+    // 进度
     QProgressBar* m_progressBar;
     QLabel* m_statusLabel;
     bool m_isCompressing;
     
     Structure::ArrayList<Structure::String> m_selectedFiles;
     
-    // Worker
+    // 工作线程
     class CompressionWorker* m_worker;
 
 private slots:

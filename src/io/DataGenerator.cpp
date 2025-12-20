@@ -3,11 +3,11 @@
 namespace IO {
 
 DataGenerator::DataGenerator() {
-    // TODO: Initialize
+    // TODO: 初始化
 }
 
 DataGenerator::~DataGenerator() {
-    // TODO: Cleanup
+    // TODO: 清理
 }
 
 }

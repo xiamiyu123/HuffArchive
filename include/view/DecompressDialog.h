@@ -78,14 +78,14 @@ private:
     std::string m_password;
     Structure::ArrayList<Structure::String> m_filesToExtract;
 
-    // UI Components
+    // UI 组件
     QVBoxLayout* m_mainLayout;
     
-    // Header
+    // 标题
     QLabel* m_titleLabel;
     QLabel* m_subtitleLabel;
     
-    // Settings
+    // 设置
     QGroupBox* m_settingsGroup;
     QLineEdit* m_destPathEdit;
     QPushButton* m_browseBtn;
@@ -93,11 +93,11 @@ private:
     QCheckBox* m_overwriteCheck;
     QCheckBox* m_useTreeMapCheck; // 新增：使用 TreeMap 选项
     
-    // Progress
+    // 进度
     QProgressBar* m_progressBar;
     QLabel* m_statusLabel;
     
-    // Actions
+    // 操作
     QPushButton* m_extractBtn;
     QPushButton* m_cancelBtn;
 

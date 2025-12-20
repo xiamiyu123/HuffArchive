@@ -33,23 +33,23 @@ private:
     Structure::String m_archivePath;
     std::string m_password;
     
-    // UI Components
+    // UI 组件
     QVBoxLayout* m_mainLayout;
-    QWidget* m_topPanel;      // Replaces QToolBar for custom styling
-    QLineEdit* m_pathEdit;    // Address bar
-    QLineEdit* m_searchEdit;  // Search bar
+    QWidget* m_topPanel;      // 替换 QToolBar 以进行自定义样式设置
+    QLineEdit* m_pathEdit;    // 地址栏
+    QLineEdit* m_searchEdit;  // 搜索栏
     QTreeWidget* m_fileList;
     QLabel* m_statusLabel;
     QProgressBar* m_progressBar;
     
-    // Toolbar actions
+    // 工具栏操作
     QPushButton* m_extractBtn;
     QPushButton* m_extractSelectedBtn;
     QPushButton* m_addBtn;
     QPushButton* m_deleteBtn;
-    QPushButton* m_infoBtn;   // Replaces properties/test/help for cleaner UI
+    QPushButton* m_infoBtn;   // 替换属性/测试/帮助，使 UI 更整洁
 
-    // Async handling
+    // 异步处理
     QFutureWatcher<std::pair<bool, std::string>> m_openFileWatcher;
     Structure::String m_currentOpeningFile;
     Structure::String m_currentTempDir;
@@ -65,7 +65,7 @@ private slots:
     void onOpenFileFinished();
 
 private:
-    // Helper for temporary extraction
+    // 临时解压辅助函数
     void extractAndOpenFile(const Structure::String& relativePath);
 };
 

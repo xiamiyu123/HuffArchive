@@ -42,7 +42,7 @@ public:
 
     // 遍历
     void traverse(std::function<void(const Key&, const Value&)> callback) const override {
-        // Use iterator to traverse
+        // 使用迭代器进行遍历
         auto& nonConstTree = const_cast<LLRBTree<Key, Value>&>(tree);
         for (auto it = nonConstTree.begin(); it != nonConstTree.end(); ++it) {
             auto entry = *it;
