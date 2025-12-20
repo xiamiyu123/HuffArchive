@@ -7,16 +7,19 @@
 #include <QApplication>
 #include <QFile>
 #include <QTextStream>
+#include <QDateTime>
 #include <random>
 #include <vector>
 
 namespace View {
 
-TestView::TestView(QWidget *parent) : QWidget(parent) {
+TestView::TestView(QWidget *parent) : QWidget(parent), m_currentTree(nullptr) {
     setupUI();
 }
 
-TestView::~TestView() {}
+TestView::~TestView() {
+    if (m_currentTree) delete m_currentTree;
+}
 
 void TestView::setupUI() {
     m_mainLayout = new QVBoxLayout(this);
@@ -134,15 +137,23 @@ void TestView::setupUI() {
 
 void TestView::onRunTest() {
     m_runBtn->setEnabled(false);
+    m_saveBtn->setEnabled(false);
     m_resultArea->clear();
     m_progressBar->show();
     m_progressBar->setValue(0);
+    
+    if (m_currentTree) {
+        delete m_currentTree;
+        m_currentTree = nullptr;
+    }
     m_treeVisualizer->setTree(nullptr);
     m_codeTableView->clear();
+    m_lastTestData.clear();
     
     int testType = m_testTypeCombo->currentData().toInt();
     int testSize = 0;
-    std::vector<unsigned char> data;
+    // 使用 m_lastTestData 替代局部变量 data
+    std::vector<unsigned char>& data = m_lastTestData;
 
     switch(testType) {
         case 0: // 随机
@@ -200,10 +211,10 @@ void TestView::onRunTest() {
     timer.start();
 
     // 1. 频率统计
-    Structure::HashMap<unsigned char, int> freqMap;
+    m_lastFreqMap.clear();
     for (unsigned char c : data) {
-        if (freqMap.contains(c)) freqMap[c]++;
-        else freqMap.put(c, 1);
+        if (m_lastFreqMap.contains(c)) m_lastFreqMap[c]++;
+        else m_lastFreqMap.put(c, 1);
     }
     qint64 freqTime = timer.elapsed();
     m_progressBar->setValue(50);
@@ -211,15 +222,15 @@ void TestView::onRunTest() {
     QApplication::processEvents();
 
     // 2. 建树
-    Structure::HuffmanTree* tree = new Structure::HuffmanTree();
-    tree->build(freqMap);
+    m_currentTree = new Structure::HuffmanTree();
+    m_currentTree->build(m_lastFreqMap);
     qint64 treeTime = timer.elapsed() - freqTime;
     m_progressBar->setValue(80);
     m_resultArea->append(QString(" - 哈夫曼树构建耗时: %1 ms").arg(treeTime));
     QApplication::processEvents();
 
     // 3. 编码表
-    Structure::HashMap<unsigned char, Structure::String> codes = tree->generateCodes();
+    m_lastCodes = m_currentTree->generateCodes();
     qint64 codeTime = timer.elapsed() - freqTime - treeTime;
     m_progressBar->setValue(100);
     m_resultArea->append(QString(" - 编码表生成耗时: %1 ms").arg(codeTime));
@@ -231,23 +242,63 @@ void TestView::onRunTest() {
     m_resultArea->append(QString("<b>平均速度: %1 MB/s</b>").arg(speed, 0, 'f', 2));
     
     // 更新可视化
-    m_treeVisualizer->setTree(tree);
-    m_codeTableView->updateTable(freqMap, codes);
+    m_treeVisualizer->setTree(m_currentTree);
+    m_codeTableView->updateTable(m_lastFreqMap, m_lastCodes);
     
     m_runBtn->setEnabled(true);
+    m_saveBtn->setEnabled(true);
     m_progressBar->hide();
 }
 
 void TestView::onSaveResult() {
-    QString fileName = QFileDialog::getSaveFileName(this, "保存测试日志", "", "Text Files (*.txt);;All Files (*)");
-    if (fileName.isEmpty()) return;
+    if (m_lastTestData.empty() || !m_currentTree) return;
 
-    QFile file(fileName);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        out << m_resultArea->toPlainText();
-        file.close();
+    QString dirPath = QFileDialog::getExistingDirectory(this, "选择保存目录", "");
+    if (dirPath.isEmpty()) return;
+
+    QDir dir(dirPath);
+    QString folderName = QString("TestResult_%1").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
+    if (!dir.mkdir(folderName)) return;
+    dir.cd(folderName);
+
+    // 1. 保存原始数据
+    QFile rawFile(dir.filePath("original.dat"));
+    if (rawFile.open(QIODevice::WriteOnly)) {
+        rawFile.write(reinterpret_cast<const char*>(m_lastTestData.data()), m_lastTestData.size());
+        rawFile.close();
     }
+
+    // 2. 保存编码表 (用于恢复)
+    QFile codeFile(dir.filePath("codes.txt"));
+    if (codeFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&codeFile);
+        for (auto it = m_lastCodes.begin(); it != m_lastCodes.end(); ++it) {
+            unsigned char ch = it->first;
+            Structure::String code = it->second;
+            out << (int)ch << ":" << code.c_str() << "\n";
+        }
+        codeFile.close();
+    }
+
+    // 3. 保存压缩后的 01 字符串 (模拟压缩信息)
+    QFile compFile(dir.filePath("compressed_bits.txt"));
+    if (compFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&compFile);
+        // 生成并保存完整的 01 序列
+        Structure::String encoded = m_currentTree->encode(m_lastTestData.data(), m_lastTestData.size());
+        out << encoded.c_str();
+        compFile.close();
+    }
+
+    // 4. 保存测试报告
+    QFile reportFile(dir.filePath("report.txt"));
+    if (reportFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&reportFile);
+        out << m_resultArea->toPlainText();
+        reportFile.close();
+    }
+
+    m_resultArea->append(QString("\n<span style='color: green;'>结果已保存至: %1</span>").arg(dir.absolutePath()));
 }
 
 void TestView::onTestTypeChanged(int index) {

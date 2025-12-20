@@ -10,6 +10,9 @@
 #include <QTabWidget>
 #include <QLineEdit>
 #include <QFileDialog>
+#include <QDir>
+#include "structure/HuffmanTree.h"
+#include "structure/HashMap.h"
 
 namespace View {
 
@@ -47,6 +50,12 @@ private:
     CodeTableView* m_codeTableView;
     
     QProgressBar* m_progressBar;
+
+    // 存储最近一次测试的数据以便保存
+    std::vector<unsigned char> m_lastTestData;
+    Structure::HuffmanTree* m_currentTree;
+    Structure::HashMap<unsigned char, int> m_lastFreqMap;
+    Structure::HashMap<unsigned char, Structure::String> m_lastCodes;
 };
 
 }
