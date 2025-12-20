@@ -33,13 +33,18 @@ private slots:
     void onSaveResult();
     void onTestTypeChanged(int index);
 
+public:
+    void setTestType(int type);
+
 private:
     void setupUI();
+    void runMapPerformanceTest();
     
     QVBoxLayout* m_mainLayout;
     QLabel* m_titleLabel;
     QComboBox* m_testTypeCombo;
     QLineEdit* m_manualInput;
+    QLineEdit* m_dataSizeInput;
     QPushButton* m_runBtn;
     QPushButton* m_saveBtn;
     QPushButton* m_backBtn;

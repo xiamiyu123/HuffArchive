@@ -63,6 +63,7 @@ private:
     QAction* m_exitAction;
     QAction* m_associateAction;
     QAction* m_speedTestAction;
+    QAction* m_mapPerformanceAction;
     QAction* m_aboutAction;
     
 private slots:
@@ -71,6 +72,7 @@ private slots:
     void onHistoryActionTriggered();
     void onAssociateFileExtension();
     void onSpeedTestTriggered();
+    void onMapPerformanceTriggered();
     void onAboutTriggered();
 };
 

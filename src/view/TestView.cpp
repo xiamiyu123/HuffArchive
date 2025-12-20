@@ -1,6 +1,7 @@
 #include "view/TestView.h"
 #include "structure/HuffmanTree.h"
 #include "structure/HashMap.h"
+#include "structure/MapFactory.h"
 #include "view/TreeVisualizer.h"
 #include "view/CodeTableView.h"
 #include <QElapsedTimer>
@@ -58,6 +59,7 @@ void TestView::setupUI() {
     m_testTypeCombo->addItem("递增序列测试 (1MB)", 2);
     m_testTypeCombo->addItem("少量字符重复测试 (100KB)", 3);
     m_testTypeCombo->addItem("人工输入数据", 4);
+    m_testTypeCombo->addItem("Map 性能对比测试 (10^5 数据)", 5);
     m_testTypeCombo->setFixedWidth(200);
     m_testTypeCombo->setStyleSheet("QComboBox { padding: 5px; border: 1px solid #DADCE0; border-radius: 4px; }");
     ctrlLayout->addWidget(m_testTypeCombo);
@@ -68,6 +70,13 @@ void TestView::setupUI() {
     m_manualInput->setStyleSheet("QLineEdit { padding: 5px; border: 1px solid #DADCE0; border-radius: 4px; }");
     m_manualInput->hide();
     ctrlLayout->addWidget(m_manualInput);
+
+    m_dataSizeInput = new QLineEdit(this);
+    m_dataSizeInput->setPlaceholderText("数据量 (默认 100000)");
+    m_dataSizeInput->setFixedWidth(150);
+    m_dataSizeInput->setStyleSheet("QLineEdit { padding: 5px; border: 1px solid #DADCE0; border-radius: 4px; }");
+    m_dataSizeInput->hide();
+    ctrlLayout->addWidget(m_dataSizeInput);
 
     m_runBtn = new QPushButton("开始测试", this);
     m_runBtn->setFixedSize(120, 36);
@@ -202,6 +211,9 @@ void TestView::onRunTest() {
                 m_resultArea->append(QString("测试类型: <b>人工输入数据 (%1 字节)</b>").arg(testSize));
             }
             break;
+        case 5: // Map 性能对比
+            runMapPerformanceTest();
+            return;
     }
 
     QApplication::processEvents();
@@ -251,7 +263,7 @@ void TestView::onRunTest() {
 }
 
 void TestView::onSaveResult() {
-    if (m_lastTestData.empty() || !m_currentTree) return;
+    if (m_resultArea->toPlainText().isEmpty()) return;
 
     QString dirPath = QFileDialog::getExistingDirectory(this, "选择保存目录", "");
     if (dirPath.isEmpty()) return;
@@ -261,33 +273,38 @@ void TestView::onSaveResult() {
     if (!dir.mkdir(folderName)) return;
     dir.cd(folderName);
 
-    // 1. 保存原始数据
-    QFile rawFile(dir.filePath("original.dat"));
-    if (rawFile.open(QIODevice::WriteOnly)) {
-        rawFile.write(reinterpret_cast<const char*>(m_lastTestData.data()), m_lastTestData.size());
-        rawFile.close();
-    }
-
-    // 2. 保存编码表 (用于恢复)
-    QFile codeFile(dir.filePath("codes.txt"));
-    if (codeFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&codeFile);
-        for (auto it = m_lastCodes.begin(); it != m_lastCodes.end(); ++it) {
-            unsigned char ch = it->first;
-            Structure::String code = it->second;
-            out << (int)ch << ":" << code.c_str() << "\n";
+    // 1. 保存原始数据 (如果有)
+    if (!m_lastTestData.empty()) {
+        QFile rawFile(dir.filePath("original.dat"));
+        if (rawFile.open(QIODevice::WriteOnly)) {
+            rawFile.write(reinterpret_cast<const char*>(m_lastTestData.data()), m_lastTestData.size());
+            rawFile.close();
         }
-        codeFile.close();
     }
 
-    // 3. 保存压缩后的 01 字符串 (模拟压缩信息)
-    QFile compFile(dir.filePath("compressed_bits.txt"));
-    if (compFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&compFile);
-        // 生成并保存完整的 01 序列
-        Structure::String encoded = m_currentTree->encode(m_lastTestData.data(), m_lastTestData.size());
-        out << encoded.c_str();
-        compFile.close();
+    // 2. 保存编码表 (如果有)
+    if (!m_lastCodes.isEmpty()) {
+        QFile codeFile(dir.filePath("codes.txt"));
+        if (codeFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&codeFile);
+            for (auto it = m_lastCodes.begin(); it != m_lastCodes.end(); ++it) {
+                unsigned char ch = it->first;
+                Structure::String code = it->second;
+                out << (int)ch << ":" << code.c_str() << "\n";
+            }
+            codeFile.close();
+        }
+    }
+
+    // 3. 保存压缩后的 01 字符串 (如果有)
+    if (m_currentTree && !m_lastTestData.empty()) {
+        QFile compFile(dir.filePath("compressed_bits.txt"));
+        if (compFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&compFile);
+            Structure::String encoded = m_currentTree->encode(m_lastTestData.data(), m_lastTestData.size());
+            out << encoded.c_str();
+            compFile.close();
+        }
     }
 
     // 4. 保存测试报告
@@ -303,11 +320,157 @@ void TestView::onSaveResult() {
 
 void TestView::onTestTypeChanged(int index) {
     int testType = m_testTypeCombo->itemData(index).toInt();
-    if (testType == 4) {
-        m_manualInput->show();
-    } else {
-        m_manualInput->hide();
+    m_manualInput->setVisible(testType == 4);
+    m_dataSizeInput->setVisible(testType == 5);
+
+    // 如果是 Map 性能对比测试，隐藏可视化选项卡
+    bool isMapTest = (testType == 5);
+    m_tabWidget->setTabVisible(1, !isMapTest); // 哈夫曼树预览
+    m_tabWidget->setTabVisible(2, !isMapTest); // 编码详情
+    
+    if (isMapTest && m_tabWidget->currentIndex() != 0) {
+        m_tabWidget->setCurrentIndex(0);
     }
+}
+
+void TestView::setTestType(int type) {
+    for (int i = 0; i < m_testTypeCombo->count(); ++i) {
+        if (m_testTypeCombo->itemData(i).toInt() == type) {
+            m_testTypeCombo->setCurrentIndex(i);
+            break;
+        }
+    }
+}
+
+void TestView::runMapPerformanceTest() {
+    m_runBtn->setEnabled(false);
+    m_saveBtn->setEnabled(false);
+    m_resultArea->clear();
+    m_progressBar->show();
+    m_progressBar->setValue(0);
+
+    int DATA_SIZE = m_dataSizeInput->text().toInt();
+    if (DATA_SIZE <= 0) DATA_SIZE = 100000; // 默认值
+
+    m_resultArea->append(QString("<b>Map 基础性能对比测试 (数据量: %1)</b>").arg(DATA_SIZE));
+    m_resultArea->append("--------------------------------------------------");
+    QApplication::processEvents();
+
+    // 准备随机数据
+    std::vector<int> keys(DATA_SIZE);
+    std::vector<int> values(DATA_SIZE);
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<int> dist(1, 1000000);
+
+    for (int i = 0; i < DATA_SIZE; ++i) {
+        keys[i] = dist(rng);
+        values[i] = dist(rng);
+    }
+    m_progressBar->setValue(20);
+    QApplication::processEvents();
+
+    struct MapTypeInfo {
+        QString name;
+        Structure::MapType type;
+    };
+
+    std::vector<MapTypeInfo> mapTypes = {
+        {"HashMap", Structure::MapType::HASH_MAP},
+        {"TreeMap (LLRB)", Structure::MapType::TREE_MAP},
+        {"TreeMap (STL)", Structure::MapType::TREE_MAP_STL}
+    };
+
+    int progressStep = 80 / mapTypes.size();
+    int currentProgress = 20;
+
+    for (const auto& info : mapTypes) {
+        m_resultArea->append(QString("正在测试: <span style='color: #1A73E8;'>%1</span>...").arg(info.name));
+        QApplication::processEvents();
+
+        Structure::MapHuff<int, int>* map = Structure::MapFactory<int, int>::createMap(info.type);
+        
+        QElapsedTimer timer;
+        
+        // 1. 插入测试
+        timer.start();
+        for (int i = 0; i < DATA_SIZE; ++i) {
+            map->put(keys[i], values[i]);
+        }
+        qint64 insertTime = timer.elapsed();
+
+        // 2. 查找测试
+        timer.start();
+        for (int i = 0; i < DATA_SIZE; ++i) {
+            map->contains(keys[i]);
+        }
+        qint64 containsTime = timer.elapsed();
+
+        // 3. 获取测试
+        timer.start();
+        for (int i = 0; i < DATA_SIZE; ++i) {
+            map->get(keys[i]);
+        }
+        qint64 getTime = timer.elapsed();
+
+        m_resultArea->append(QString("  - 插入耗时: %1 ms").arg(insertTime));
+        m_resultArea->append(QString("  - 查找耗时: %1 ms").arg(containsTime));
+        m_resultArea->append(QString("  - 获取耗时: %1 ms").arg(getTime));
+
+        // --- 新增：哈夫曼相关性能测试 ---
+        m_resultArea->append("  [哈夫曼算法集成测试 - 1MB 数据]");
+        
+        // 准备 1MB 随机字节
+        std::vector<unsigned char> huffData(1024 * 1024);
+        for (auto& b : huffData) b = static_cast<unsigned char>(dist(rng) % 256);
+
+        // 1. 频率统计 (使用当前 Map 类型)
+        Structure::MapHuff<unsigned char, int>* freqMap = Structure::MapFactory<unsigned char, int>::createMap(info.type);
+        timer.start();
+        for (unsigned char c : huffData) {
+            int* count = freqMap->get(c);
+            if (count) (*count)++;
+            else freqMap->put(c, 1);
+        }
+        qint64 huffFreqTime = timer.elapsed();
+
+        // 2. 建树
+        Structure::HuffmanTree huffTree;
+        timer.start();
+        huffTree.build(*freqMap);
+        qint64 huffBuildTime = timer.elapsed();
+
+        // 3. 解码测试 (先生成一小段数据用于测试解码速度)
+        // 为了测试解码，我们先编码前 10KB 数据
+        Structure::String encoded = huffTree.encode(huffData.data(), 10240);
+        int bitPos = 0;
+        auto readBit = [&]() -> int {
+            if (bitPos >= (int)encoded.length()) return -1;
+            return encoded[bitPos++] == '1' ? 1 : 0;
+        };
+        auto writeByte = [&](unsigned char) { /* 仅测试速度，不存储输出 */ };
+        
+        timer.start();
+        huffTree.decode(readBit, writeByte, 10240);
+        qint64 huffDecodeTime = timer.elapsed();
+
+        m_resultArea->append(QString("    * 频率统计 (Map-%1): %2 ms").arg(info.name).arg(huffFreqTime));
+        m_resultArea->append(QString("    * 哈夫曼建树: %1 ms").arg(huffBuildTime));
+        m_resultArea->append(QString("    * 流式解码 (10KB): %1 ms").arg(huffDecodeTime));
+        m_resultArea->append("");
+
+        delete freqMap;
+        delete map;
+        currentProgress += progressStep;
+        m_progressBar->setValue(currentProgress);
+        QApplication::processEvents();
+    }
+
+    m_resultArea->append("--------------------------------------------------");
+    m_resultArea->append("<b style='color: green;'>测试完成！</b>");
+    
+    m_runBtn->setEnabled(true);
+    m_saveBtn->setEnabled(true);
+    m_progressBar->hide();
 }
 
 }

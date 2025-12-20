@@ -257,6 +257,7 @@ void MainWindow::setupMenuBar() {
     // 测试菜单
     m_testMenu = menuBar->addMenu("测试(T)");
     m_speedTestAction = m_testMenu->addAction("随机数据压缩速度测试");
+    m_mapPerformanceAction = m_testMenu->addAction("Map 性能对比测试");
     
     // 帮助菜单
     m_helpMenu = menuBar->addMenu("帮助(H)");
@@ -274,6 +275,7 @@ void MainWindow::setupConnections() {
     connect(m_exitAction, &QAction::triggered, this, &QMainWindow::close);
     connect(m_associateAction, &QAction::triggered, this, &MainWindow::onAssociateFileExtension);
     connect(m_speedTestAction, &QAction::triggered, this, &MainWindow::onSpeedTestTriggered);
+    connect(m_mapPerformanceAction, &QAction::triggered, this, &MainWindow::onMapPerformanceTriggered);
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutTriggered);
 }
 
@@ -357,6 +359,12 @@ void MainWindow::onHistoryActionTriggered() {
 
 void MainWindow::onSpeedTestTriggered() {
     showTestView();
+    if (m_testView) m_testView->setTestType(0);
+}
+
+void MainWindow::onMapPerformanceTriggered() {
+    showTestView();
+    if (m_testView) m_testView->setTestType(5); // 5 will be Map Performance
 }
 
 void MainWindow::onAboutTriggered() {
