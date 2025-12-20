@@ -100,6 +100,11 @@ void TestView::setupUI() {
     ctrlLayout->addStretch();
     m_mainLayout->addLayout(ctrlLayout);
 
+    m_warningLabel = new QLabel("⚠️ 数据量过大可能导致测试时间较长，建议适当减小数据量。", this);
+    m_warningLabel->setStyleSheet("color: #D93025; font-size: 12px; font-weight: 500;");
+    m_warningLabel->hide();
+    m_mainLayout->addWidget(m_warningLabel);
+
     // 进度条
     m_progressBar = new QProgressBar(this);
     m_progressBar->setRange(0, 100);
@@ -150,6 +155,7 @@ void TestView::onRunTest() {
     m_resultArea->clear();
     m_progressBar->show();
     m_progressBar->setValue(0);
+    m_resultArea->append("<span style='color: #1A73E8;'>正在准备测试数据，请稍候...</span>");
     
     if (m_currentTree) {
         delete m_currentTree;
@@ -160,106 +166,108 @@ void TestView::onRunTest() {
     m_lastTestData.clear();
     
     int testType = m_testTypeCombo->currentData().toInt();
-    int testSize = 0;
-    // 使用 m_lastTestData 替代局部变量 data
-    std::vector<unsigned char>& data = m_lastTestData;
+    QString manualText = m_manualInput->text();
 
-    switch(testType) {
-        case 0: // 随机
-            testSize = 5 * 1024 * 1024;
-            data.resize(testSize);
-            {
-                std::mt19937 gen(std::random_device{}());
-                std::uniform_int_distribution<> dis(0, 255);
-                for (int i = 0; i < testSize; ++i) data[i] = static_cast<unsigned char>(dis(gen));
-            }
-            m_resultArea->append("测试类型: <b>随机数据 (5MB)</b>");
-            break;
-        case 1: // 全零
-            testSize = 1 * 1024 * 1024;
-            data.assign(testSize, 0);
-            m_resultArea->append("测试类型: <b>全零数据 (1MB)</b>");
-            break;
-        case 2: // 递增
-            testSize = 1 * 1024 * 1024;
-            data.resize(testSize);
-            for (int i = 0; i < testSize; ++i) data[i] = static_cast<unsigned char>(i % 256);
-            m_resultArea->append("测试类型: <b>递增序列 (1MB)</b>");
-            break;
-        case 3: // 少量字符
-            testSize = 100 * 1024;
-            data.resize(testSize);
-            {
-                const char* chars = "ABCDEFG";
-                for (int i = 0; i < testSize; ++i) data[i] = chars[i % 7];
-            }
-            m_resultArea->append("测试类型: <b>少量字符重复 (100KB)</b>");
-            break;
-        case 4: // 人工输入
-            {
-                QString text = m_manualInput->text();
-                if (text.isEmpty()) {
-                    m_resultArea->append("<span style='color: red;'>错误: 请输入测试文本！</span>");
-                    m_runBtn->setEnabled(true);
-                    m_progressBar->hide();
-                    return;
-                }
-                QByteArray bytes = text.toUtf8();
-                testSize = bytes.size();
+    // 使用 QtConcurrent 异步运行测试
+    QFuture<void> future = QtConcurrent::run([this, testType, manualText]() {
+        int testSize = 0;
+        std::vector<unsigned char> data;
+
+        switch(testType) {
+            case 0: // 随机
+                testSize = 5 * 1024 * 1024;
                 data.resize(testSize);
-                memcpy(data.data(), bytes.data(), testSize);
-                m_resultArea->append(QString("测试类型: <b>人工输入数据 (%1 字节)</b>").arg(testSize));
-            }
-            break;
-        case 5: // Map 性能对比
-            runMapPerformanceTest();
-            return;
-    }
+                {
+                    std::mt19937 gen(std::random_device{}());
+                    std::uniform_int_distribution<> dis(0, 255);
+                    for (int i = 0; i < testSize; ++i) data[i] = static_cast<unsigned char>(dis(gen));
+                }
+                QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "测试类型: <b>随机数据 (5MB)</b>"));
+                break;
+            case 1: // 全零
+                testSize = 1 * 1024 * 1024;
+                data.assign(testSize, 0);
+                QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "测试类型: <b>全零数据 (1MB)</b>"));
+                break;
+            case 2: // 递增
+                testSize = 1 * 1024 * 1024;
+                data.resize(testSize);
+                for (int i = 0; i < testSize; ++i) data[i] = static_cast<unsigned char>(i % 256);
+                QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "测试类型: <b>递增序列 (1MB)</b>"));
+                break;
+            case 3: // 少量字符
+                testSize = 100 * 1024;
+                data.resize(testSize);
+                {
+                    const char* chars = "ABCDEFG";
+                    for (int i = 0; i < testSize; ++i) data[i] = chars[i % 7];
+                }
+                QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "测试类型: <b>少量字符重复 (100KB)</b>"));
+                break;
+            case 4: // 人工输入
+                {
+                    if (manualText.isEmpty()) {
+                        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "<span style='color: red;'>错误: 请输入测试文本！</span>"));
+                        QMetaObject::invokeMethod(m_runBtn, "setEnabled", Q_ARG(bool, true));
+                        QMetaObject::invokeMethod(m_progressBar, "hide", Qt::QueuedConnection);
+                        return;
+                    }
+                    QByteArray bytes = manualText.toUtf8();
+                    testSize = bytes.size();
+                    data.resize(testSize);
+                    memcpy(data.data(), bytes.data(), testSize);
+                    QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("测试类型: <b>人工输入数据 (%1 字节)</b>").arg(testSize)));
+                }
+                break;
+            case 5: // Map 性能对比
+                runMapPerformanceTest();
+                return;
+        }
 
-    QApplication::processEvents();
-    m_progressBar->setValue(20);
+        m_lastTestData = data;
+        QMetaObject::invokeMethod(m_progressBar, "setValue", Q_ARG(int, 20));
 
-    QElapsedTimer timer;
-    timer.start();
+        QElapsedTimer timer;
+        timer.start();
 
-    // 1. 频率统计
-    m_lastFreqMap.clear();
-    for (unsigned char c : data) {
-        if (m_lastFreqMap.contains(c)) m_lastFreqMap[c]++;
-        else m_lastFreqMap.put(c, 1);
-    }
-    qint64 freqTime = timer.elapsed();
-    m_progressBar->setValue(50);
-    m_resultArea->append(QString(" - 频率统计耗时: %1 ms").arg(freqTime));
-    QApplication::processEvents();
+        // 1. 频率统计
+        m_lastFreqMap.clear();
+        for (unsigned char c : data) {
+            if (m_lastFreqMap.contains(c)) m_lastFreqMap[c]++;
+            else m_lastFreqMap.put(c, 1);
+        }
+        qint64 freqTime = timer.elapsed();
+        QMetaObject::invokeMethod(m_progressBar, "setValue", Q_ARG(int, 50));
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString(" - 频率统计耗时: %1 ms").arg(freqTime)));
 
-    // 2. 建树
-    m_currentTree = new Structure::HuffmanTree();
-    m_currentTree->build(m_lastFreqMap);
-    qint64 treeTime = timer.elapsed() - freqTime;
-    m_progressBar->setValue(80);
-    m_resultArea->append(QString(" - 哈夫曼树构建耗时: %1 ms").arg(treeTime));
-    QApplication::processEvents();
+        // 2. 建树
+        m_currentTree = new Structure::HuffmanTree();
+        m_currentTree->build(m_lastFreqMap);
+        qint64 treeTime = timer.elapsed() - freqTime;
+        QMetaObject::invokeMethod(m_progressBar, "setValue", Q_ARG(int, 80));
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString(" - 哈夫曼树构建耗时: %1 ms").arg(treeTime)));
 
-    // 3. 编码表
-    m_lastCodes = m_currentTree->generateCodes();
-    qint64 codeTime = timer.elapsed() - freqTime - treeTime;
-    m_progressBar->setValue(100);
-    m_resultArea->append(QString(" - 编码表生成耗时: %1 ms").arg(codeTime));
-    
-    qint64 totalElapsed = timer.elapsed();
-    double speed = (testSize / 1024.0 / 1024.0) / (totalElapsed / 1000.0 + 0.001);
+        // 3. 编码表
+        m_lastCodes = m_currentTree->generateCodes();
+        qint64 codeTime = timer.elapsed() - freqTime - treeTime;
+        QMetaObject::invokeMethod(m_progressBar, "setValue", Q_ARG(int, 100));
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString(" - 编码表生成耗时: %1 ms").arg(codeTime)));
+        
+        qint64 totalElapsed = timer.elapsed();
+        double speed = (testSize / 1024.0 / 1024.0) / (totalElapsed / 1000.0 + 0.001);
 
-    m_resultArea->append(QString("\n<b>总耗时: %1 ms</b>").arg(totalElapsed));
-    m_resultArea->append(QString("<b>平均速度: %1 MB/s</b>").arg(speed, 0, 'f', 2));
-    
-    // 更新可视化
-    m_treeVisualizer->setTree(m_currentTree);
-    m_codeTableView->updateTable(m_lastFreqMap, m_lastCodes);
-    
-    m_runBtn->setEnabled(true);
-    m_saveBtn->setEnabled(true);
-    m_progressBar->hide();
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("\n<b>总耗时: %1 ms</b>").arg(totalElapsed)));
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("<b>平均速度: %1 MB/s</b>").arg(speed, 0, 'f', 2)));
+        
+        // 更新可视化 (必须在主线程)
+        QMetaObject::invokeMethod(this, [this]() {
+            m_treeVisualizer->setTree(m_currentTree);
+            m_codeTableView->updateTable(m_lastFreqMap, m_lastCodes);
+            m_runBtn->setEnabled(true);
+            m_saveBtn->setEnabled(true);
+            m_progressBar->hide();
+        }, Qt::QueuedConnection);
+    });
 }
 
 void TestView::onSaveResult() {
@@ -322,6 +330,7 @@ void TestView::onTestTypeChanged(int index) {
     int testType = m_testTypeCombo->itemData(index).toInt();
     m_manualInput->setVisible(testType == 4);
     m_dataSizeInput->setVisible(testType == 5);
+    m_warningLabel->setVisible(testType == 5 || testType == 0); // Map测试或大随机数据测试显示警告
 
     // 如果是 Map 性能对比测试，隐藏可视化选项卡
     bool isMapTest = (testType == 5);
@@ -343,134 +352,123 @@ void TestView::setTestType(int type) {
 }
 
 void TestView::runMapPerformanceTest() {
-    m_runBtn->setEnabled(false);
-    m_saveBtn->setEnabled(false);
-    m_resultArea->clear();
-    m_progressBar->show();
-    m_progressBar->setValue(0);
-
     int DATA_SIZE = m_dataSizeInput->text().toInt();
     if (DATA_SIZE <= 0) DATA_SIZE = 100000; // 默认值
 
-    m_resultArea->append(QString("<b>Map 基础性能对比测试 (数据量: %1)</b>").arg(DATA_SIZE));
-    m_resultArea->append("--------------------------------------------------");
-    QApplication::processEvents();
+    QFuture<void> future = QtConcurrent::run([this, DATA_SIZE]() {
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("<b>Map 基础性能对比测试 (数据量: %1)</b>").arg(DATA_SIZE)));
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "--------------------------------------------------"));
 
-    // 准备随机数据
-    std::vector<int> keys(DATA_SIZE);
-    std::vector<int> values(DATA_SIZE);
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<int> dist(1, 1000000);
+        // 准备随机数据
+        std::vector<int> keys(DATA_SIZE);
+        std::vector<int> values(DATA_SIZE);
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<int> dist(1, 1000000);
 
-    for (int i = 0; i < DATA_SIZE; ++i) {
-        keys[i] = dist(rng);
-        values[i] = dist(rng);
-    }
-    m_progressBar->setValue(20);
-    QApplication::processEvents();
-
-    struct MapTypeInfo {
-        QString name;
-        Structure::MapType type;
-    };
-
-    std::vector<MapTypeInfo> mapTypes = {
-        {"HashMap", Structure::MapType::HASH_MAP},
-        {"TreeMap (LLRB)", Structure::MapType::TREE_MAP},
-        {"TreeMap (STL)", Structure::MapType::TREE_MAP_STL}
-    };
-
-    int progressStep = 80 / mapTypes.size();
-    int currentProgress = 20;
-
-    for (const auto& info : mapTypes) {
-        m_resultArea->append(QString("正在测试: <span style='color: #1A73E8;'>%1</span>...").arg(info.name));
-        QApplication::processEvents();
-
-        Structure::MapHuff<int, int>* map = Structure::MapFactory<int, int>::createMap(info.type);
-        
-        QElapsedTimer timer;
-        
-        // 1. 插入测试
-        timer.start();
         for (int i = 0; i < DATA_SIZE; ++i) {
-            map->put(keys[i], values[i]);
+            keys[i] = dist(rng);
+            values[i] = dist(rng);
         }
-        qint64 insertTime = timer.elapsed();
+        QMetaObject::invokeMethod(m_progressBar, "setValue", Q_ARG(int, 20));
 
-        // 2. 查找测试
-        timer.start();
-        for (int i = 0; i < DATA_SIZE; ++i) {
-            map->contains(keys[i]);
-        }
-        qint64 containsTime = timer.elapsed();
-
-        // 3. 获取测试
-        timer.start();
-        for (int i = 0; i < DATA_SIZE; ++i) {
-            map->get(keys[i]);
-        }
-        qint64 getTime = timer.elapsed();
-
-        m_resultArea->append(QString("  - 插入耗时: %1 ms").arg(insertTime));
-        m_resultArea->append(QString("  - 查找耗时: %1 ms").arg(containsTime));
-        m_resultArea->append(QString("  - 获取耗时: %1 ms").arg(getTime));
-
-        // --- 新增：哈夫曼相关性能测试 ---
-        m_resultArea->append("  [哈夫曼算法集成测试 - 1MB 数据]");
-        
-        // 准备 1MB 随机字节
-        std::vector<unsigned char> huffData(1024 * 1024);
-        for (auto& b : huffData) b = static_cast<unsigned char>(dist(rng) % 256);
-
-        // 1. 频率统计 (使用当前 Map 类型)
-        Structure::MapHuff<unsigned char, int>* freqMap = Structure::MapFactory<unsigned char, int>::createMap(info.type);
-        timer.start();
-        for (unsigned char c : huffData) {
-            int* count = freqMap->get(c);
-            if (count) (*count)++;
-            else freqMap->put(c, 1);
-        }
-        qint64 huffFreqTime = timer.elapsed();
-
-        // 2. 建树
-        Structure::HuffmanTree huffTree;
-        timer.start();
-        huffTree.build(*freqMap);
-        qint64 huffBuildTime = timer.elapsed();
-
-        // 3. 解码测试 (先生成一小段数据用于测试解码速度)
-        // 为了测试解码，我们先编码前 10KB 数据
-        Structure::String encoded = huffTree.encode(huffData.data(), 10240);
-        int bitPos = 0;
-        auto readBit = [&]() -> int {
-            if (bitPos >= (int)encoded.length()) return -1;
-            return encoded[bitPos++] == '1' ? 1 : 0;
+        struct MapTypeInfo {
+            QString name;
+            Structure::MapType type;
         };
-        auto writeByte = [&](unsigned char) { /* 仅测试速度，不存储输出 */ };
+
+        std::vector<MapTypeInfo> mapTypes = {
+            {"HashMap", Structure::MapType::HASH_MAP},
+            {"TreeMap (LLRB)", Structure::MapType::TREE_MAP},
+            {"TreeMap (STL)", Structure::MapType::TREE_MAP_STL}
+        };
+
+        int progressStep = 80 / mapTypes.size();
+        int currentProgress = 20;
+
+        for (const auto& info : mapTypes) {
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("正在测试: <span style='color: #1A73E8;'>%1</span>...").arg(info.name)));
+
+            Structure::MapHuff<int, int>* map = Structure::MapFactory<int, int>::createMap(info.type);
+            
+            QElapsedTimer timer;
+            
+            // 1. 插入测试
+            timer.start();
+            for (int i = 0; i < DATA_SIZE; ++i) {
+                map->put(keys[i], values[i]);
+            }
+            qint64 insertTime = timer.elapsed();
+
+            // 2. 查找测试
+            timer.start();
+            for (int i = 0; i < DATA_SIZE; ++i) {
+                map->contains(keys[i]);
+            }
+            qint64 containsTime = timer.elapsed();
+
+            // 3. 获取测试
+            timer.start();
+            for (int i = 0; i < DATA_SIZE; ++i) {
+                map->get(keys[i]);
+            }
+            qint64 getTime = timer.elapsed();
+
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("  - 插入耗时: %1 ms").arg(insertTime)));
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("  - 查找耗时: %1 ms").arg(containsTime)));
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("  - 获取耗时: %1 ms").arg(getTime)));
+
+            // --- 哈夫曼算法集成测试 ---
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "  [哈夫曼算法集成测试 - 1MB 数据]"));
+            
+            std::vector<unsigned char> huffData(1024 * 1024);
+            for (auto& b : huffData) b = static_cast<unsigned char>(dist(rng) % 256);
+
+            Structure::MapHuff<unsigned char, int>* freqMap = Structure::MapFactory<unsigned char, int>::createMap(info.type);
+            timer.start();
+            for (unsigned char c : huffData) {
+                int* count = freqMap->get(c);
+                if (count) (*count)++;
+                else freqMap->put(c, 1);
+            }
+            qint64 huffFreqTime = timer.elapsed();
+
+            Structure::HuffmanTree huffTree;
+            timer.start();
+            huffTree.build(*freqMap);
+            qint64 huffBuildTime = timer.elapsed();
+
+            Structure::String encoded = huffTree.encode(huffData.data(), 10240);
+            int bitPos = 0;
+            auto readBit = [&]() -> int {
+                if (bitPos >= (int)encoded.length()) return -1;
+                return encoded[bitPos++] == '1' ? 1 : 0;
+            };
+            auto writeByte = [&](unsigned char) {};
+            
+            timer.start();
+            huffTree.decode(readBit, writeByte, 10240);
+            qint64 huffDecodeTime = timer.elapsed();
+
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("    * 频率统计 (Map-%1): %2 ms").arg(info.name).arg(huffFreqTime)));
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("    * 哈夫曼建树: %1 ms").arg(huffBuildTime)));
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, QString("    * 流式解码 (10KB): %1 ms").arg(huffDecodeTime)));
+            QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, ""));
+
+            delete freqMap;
+            delete map;
+            currentProgress += progressStep;
+            QMetaObject::invokeMethod(m_progressBar, "setValue", Q_ARG(int, currentProgress));
+        }
+
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "--------------------------------------------------"));
+        QMetaObject::invokeMethod(m_resultArea, "append", Q_ARG(QString, "<b style='color: green;'>测试完成！</b>"));
         
-        timer.start();
-        huffTree.decode(readBit, writeByte, 10240);
-        qint64 huffDecodeTime = timer.elapsed();
-
-        m_resultArea->append(QString("    * 频率统计 (Map-%1): %2 ms").arg(info.name).arg(huffFreqTime));
-        m_resultArea->append(QString("    * 哈夫曼建树: %1 ms").arg(huffBuildTime));
-        m_resultArea->append(QString("    * 流式解码 (10KB): %1 ms").arg(huffDecodeTime));
-        m_resultArea->append("");
-
-        delete freqMap;
-        delete map;
-        currentProgress += progressStep;
-        m_progressBar->setValue(currentProgress);
-        QApplication::processEvents();
-    }
-
-    m_resultArea->append("--------------------------------------------------");
-    m_resultArea->append("<b style='color: green;'>测试完成！</b>");
-    
-    m_runBtn->setEnabled(true);
-    m_saveBtn->setEnabled(true);
-    m_progressBar->hide();
+        QMetaObject::invokeMethod(this, [this]() {
+            m_runBtn->setEnabled(true);
+            m_saveBtn->setEnabled(true);
+            m_progressBar->hide();
+        }, Qt::QueuedConnection);
+    });
 }
 
 }

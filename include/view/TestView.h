@@ -11,6 +11,8 @@
 #include <QLineEdit>
 #include <QFileDialog>
 #include <QDir>
+#include <QtConcurrent>
+#include <QFutureWatcher>
 #include "structure/HuffmanTree.h"
 #include "structure/HashMap.h"
 
@@ -42,6 +44,7 @@ private:
     
     QVBoxLayout* m_mainLayout;
     QLabel* m_titleLabel;
+    QLabel* m_warningLabel;
     QComboBox* m_testTypeCombo;
     QLineEdit* m_manualInput;
     QLineEdit* m_dataSizeInput;
@@ -61,6 +64,8 @@ private:
     Structure::HuffmanTree* m_currentTree;
     Structure::HashMap<unsigned char, int> m_lastFreqMap;
     Structure::HashMap<unsigned char, Structure::String> m_lastCodes;
+
+    QFutureWatcher<void> m_watcher;
 };
 
 }
