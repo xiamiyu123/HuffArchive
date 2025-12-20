@@ -15,6 +15,9 @@ public:
     explicit AboutDialog(QWidget *parent = nullptr);
     ~AboutDialog();
 
+private slots:
+    void openRepository();
+
 private:
     void setupUI();
     void setupConnections();
@@ -26,6 +29,7 @@ private:
     QLabel* m_descriptionLabel;
     QLabel* m_featuresLabel;
     QLabel* m_copyrightLabel;
+    QPushButton* m_repositoryButton;
     QPushButton* m_closeButton;
 };
 

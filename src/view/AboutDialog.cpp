@@ -4,6 +4,8 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QFont>
+#include <QDesktopServices>
+#include <QUrl>
 
 namespace View {
 
@@ -88,9 +90,13 @@ void AboutDialog::setupUI()
     // 添加弹性空间
     m_mainLayout->addStretch();
     
-    // 关闭按钮
+    // 按钮布局
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
+    m_repositoryButton = new QPushButton(tr("前往仓库"), this);
+    m_repositoryButton->setMinimumWidth(100);
+    buttonLayout->addWidget(m_repositoryButton);
+    buttonLayout->addSpacing(10);
     m_closeButton = new QPushButton(tr("关闭"), this);
     m_closeButton->setMinimumWidth(100);
     buttonLayout->addWidget(m_closeButton);
@@ -102,7 +108,13 @@ void AboutDialog::setupUI()
 
 void AboutDialog::setupConnections()
 {
+    connect(m_repositoryButton, &QPushButton::clicked, this, &AboutDialog::openRepository);
     connect(m_closeButton, &QPushButton::clicked, this, &QDialog::close);
+}
+
+void AboutDialog::openRepository()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/xiamiyu123/HuffArchive"));
 }
 
 }
