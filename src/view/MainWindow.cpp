@@ -1,6 +1,7 @@
 #include "view/MainWindow.h"
 #include "view/ArchiveView.h"
 #include "view/NewArchiveDialog.h"
+#include "view/AboutDialog.h"
 #include "command/CompressDirectoryCommand.h"
 #include "model/HistoryManager.h"
 #include "util/SystemUtils.h"
@@ -237,7 +238,7 @@ void MainWindow::setupMenuBar() {
     
     // 帮助菜单
     m_helpMenu = menuBar->addMenu("帮助(H)");
-    m_helpMenu->addAction("关于");
+    m_aboutAction = m_helpMenu->addAction("关于");
 }
 
 void MainWindow::setupConnections() {
@@ -250,6 +251,7 @@ void MainWindow::setupConnections() {
     connect(m_openAction, &QAction::triggered, this, &MainWindow::onOpenArchive);
     connect(m_exitAction, &QAction::triggered, this, &QMainWindow::close);
     connect(m_associateAction, &QAction::triggered, this, &MainWindow::onAssociateFileExtension);
+    connect(m_aboutAction, &QAction::triggered, this, &MainWindow::onAboutTriggered);
 }
 
 void MainWindow::onOpenArchive() {
@@ -284,7 +286,7 @@ void MainWindow::onNewArchive() {
 
 void MainWindow::onAssociateFileExtension() {
     if (Util::SystemUtils::isFileAssociationRegistered()) {
-        QMessageBox::information(this, "提示", "文件关联已设置。");
+        QMessageBox::information(this, "提示", "文件关联已设置。\n在某些版本windows下无效\n可手动设置打开方式 -> 始终♥");
         return;
     }
     
@@ -328,6 +330,11 @@ void MainWindow::onHistoryActionTriggered() {
     } else if (!path.isEmpty()) {
         QMessageBox::warning(this, "错误", "文件不存在或已被移动");
     }
+}
+
+void MainWindow::onAboutTriggered() {
+    AboutDialog aboutDialog(this);
+    aboutDialog.exec();
 }
 
 }

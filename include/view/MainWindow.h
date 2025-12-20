@@ -16,6 +16,7 @@
 namespace View {
 
 class ArchiveView;
+class AboutDialog;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -57,12 +58,14 @@ private:
     QAction* m_openAction;
     QAction* m_exitAction;
     QAction* m_associateAction;
+    QAction* m_aboutAction;
     
 private slots:
     void onOpenArchive();
     void onNewArchive();
     void onHistoryActionTriggered();
     void onAssociateFileExtension();
+    void onAboutTriggered();
 };
 
 }
