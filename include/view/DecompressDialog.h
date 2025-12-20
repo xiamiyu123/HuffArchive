@@ -58,6 +58,7 @@ public:
     bool shouldOverwrite() const;
     
     void setFilesToExtract(const Structure::ArrayList<Structure::String>& files);
+    void setPassword(const QString& password) { m_password = password.toUtf8().constData(); }
     void setPassword(const std::string& password) { m_password = password; }
 
 private slots:

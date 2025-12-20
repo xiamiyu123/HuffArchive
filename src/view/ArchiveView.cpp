@@ -536,8 +536,8 @@ void ArchiveView::extractAndOpenFile(const Structure::String& relativePath) {
             
             if (cmd.execute()) {
                 // Construct the full path to the extracted file
-                std::filesystem::path outDir(tempDirStr);
-                std::filesystem::path relPath(relPathStr);
+                std::filesystem::path outDir(reinterpret_cast<const char8_t*>(tempDirStr.c_str()));
+                std::filesystem::path relPath(reinterpret_cast<const char8_t*>(relPathStr.c_str()));
                 // SelectiveDecompressCommand preserves directory structure relative to output dir?
                 // Usually it does. Let's assume it extracts to tempDir/relPath
                 // But wait, if the archive has folders, does it create them? Yes.
