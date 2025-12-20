@@ -67,9 +67,18 @@ void AddFileCommand::execute() {
         std::filesystem::path path(reinterpret_cast<const char8_t*>(newFilePath.c_str()));
         std::u8string u8Filename = path.filename().u8string();
         std::string filename(reinterpret_cast<const char*>(u8Filename.c_str()));
+        Structure::String relPath(filename.c_str());
+        
+        // 检查是否存在同名文件，如果存在则移除旧记录（覆盖）
+        for (int j = 0; j < m_model->getFileCount(); ++j) {
+            if (m_model->getFile(j).getRelativePath() == relPath) {
+                m_model->removeFile(j);
+                j--; // 调整索引
+            }
+        }
         
         Model::FileRecord record(newFilePath, Model::FileType::File);
-        record.setRelativePath(Structure::String(filename.c_str()));
+        record.setRelativePath(relPath);
         record.setStatus(Model::FileStatus::Pending);
         m_model->addFile(record);
     }

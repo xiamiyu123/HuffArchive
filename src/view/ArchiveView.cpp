@@ -3,6 +3,7 @@
 #include "command/DecompressDirectoryCommand.h"
 #include "command/SelectiveDecompressCommand.h"
 #include "command/AddFileCommand.h"
+#include "command/DeleteFileCommand.h"
 #include "view/ArchivePropertiesDialog.h"
 #include "util/CryptoUtils.h"
 #include <QCoreApplication>
@@ -424,6 +425,34 @@ void ArchiveView::onAdd() {
     QStringList files = QFileDialog::getOpenFileNames(this, "选择要添加的文件");
     if (files.isEmpty()) return;
 
+    // 检查重名文件
+    QStringList duplicates;
+    for (const QString& f : files) {
+        QFileInfo fi(f);
+        QString fileName = fi.fileName();
+        
+        // 查找是否存在同名文件
+        QList<QTreeWidgetItem*> items = m_fileList->findItems(fileName, Qt::MatchExactly | Qt::MatchRecursive, 0);
+        if (!items.isEmpty()) {
+            duplicates << fileName;
+        }
+    }
+
+    if (!duplicates.isEmpty()) {
+        QString msg = "以下文件已存在，是否覆盖？\n";
+        int count = 0;
+        for (const QString& d : duplicates) {
+            msg += d + "\n";
+            count++;
+            if (count >= 10) {
+                msg += "... 等 " + QString::number(duplicates.size()) + " 个文件";
+                break;
+            }
+        }
+        int ret = QMessageBox::question(this, "确认覆盖", msg, QMessageBox::Yes | QMessageBox::No);
+        if (ret == QMessageBox::No) return;
+    }
+
     Structure::ArrayList<Structure::String> newFiles;
     for (const QString& f : files) {
         newFiles.add(Structure::String(f.toUtf8().constData()));
@@ -470,7 +499,59 @@ void ArchiveView::onAdd() {
 }
 
 void ArchiveView::onDelete() {
-    // TODO: 从压缩包删除文件
+    QList<QTreeWidgetItem*> selectedItems = m_fileList->selectedItems();
+    if (selectedItems.isEmpty()) {
+        QMessageBox::information(this, "提示", "请先选择要删除的文件");
+        return;
+    }
+
+    if (QMessageBox::question(this, "确认删除", "确定要删除选中的文件吗？") != QMessageBox::Yes) {
+        return;
+    }
+
+    Structure::ArrayList<Structure::String> filesToDelete;
+    for (QTreeWidgetItem* item : selectedItems) {
+        filesToDelete.add(Structure::String(item->text(0).toUtf8().constData()));
+    }
+
+    QProgressDialog progress("正在删除...", "取消", 0, 100, this);
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setMinimumDuration(0);
+    progress.setValue(0);
+
+    // Use a local model for the operation
+    Model::DataModel model;
+    Command::DeleteFileCommand cmd(&model, m_archivePath, filesToDelete, m_archivePath);
+    
+    cmd.setProgressCallback([&progress](float p, const std::string& msg) {
+        QMetaObject::invokeMethod(&progress, "setValue", Qt::QueuedConnection, Q_ARG(int, (int)(p * 100)));
+        QMetaObject::invokeMethod(&progress, "setLabelText", Qt::QueuedConnection, Q_ARG(QString, QString::fromUtf8(msg.c_str())));
+    });
+    
+    cmd.setCheckCancelCallback([&progress]() {
+        return progress.wasCanceled();
+    });
+
+    QFutureWatcher<void> watcher;
+    QEventLoop loop;
+    connect(&watcher, &QFutureWatcher<void>::finished, &loop, &QEventLoop::quit);
+    connect(&progress, &QProgressDialog::canceled, &loop, &QEventLoop::quit);
+
+    QFuture<void> future = QtConcurrent::run([&cmd]() {
+        cmd.execute();
+    });
+    watcher.setFuture(future);
+    
+    progress.show();
+    loop.exec();
+
+    if (progress.wasCanceled()) {
+        watcher.waitForFinished();
+        QMessageBox::information(this, "提示", "操作已取消");
+    } else {
+        loadArchive();
+        QMessageBox::information(this, "完成", "文件删除成功");
+    }
 }
 
 void ArchiveView::onInfo() {
