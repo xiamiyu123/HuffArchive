@@ -1,17 +1,31 @@
 #!/bin/bash
 set -e
 
+# Get the project root directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( dirname "$SCRIPT_DIR" )"
+cd "$PROJECT_ROOT"
+
+echo "Working in: $PROJECT_ROOT"
+
 BUILD_DIR="build_release"
 DIST_DIR="dist"
 EXEC_NAME="Huffman"
 TAR_NAME="Huffman-Linux.tar.gz"
+QT_PATH=$1
 
 # Clean
 rm -rf $BUILD_DIR $DIST_DIR $TAR_NAME
 
 # Configure
 echo "Configuring CMake..."
-cmake -B $BUILD_DIR -DCMAKE_BUILD_TYPE=Release
+CMAKE_ARGS="-B $BUILD_DIR -DCMAKE_BUILD_TYPE=Release"
+if [ ! -z "$QT_PATH" ]; then
+    CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_PREFIX_PATH=$QT_PATH"
+    echo "Using Qt Path: $QT_PATH"
+fi
+
+cmake $CMAKE_ARGS
 
 # Build
 echo "Building project..."

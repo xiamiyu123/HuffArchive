@@ -1,4 +1,16 @@
+param (
+    [string]$QtPath = ""
+)
+
 $ErrorActionPreference = "Stop"
+
+# Get the project root directory (one level up from the script location)
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+if (-not $ScriptDir) { $ScriptDir = $PSScriptRoot }
+$ProjectRoot = Split-Path -Parent $ScriptDir
+Set-Location $ProjectRoot
+
+Write-Host "Working in: $ProjectRoot"
 
 # Configuration
 $BuildDir = "build_release"
@@ -19,11 +31,25 @@ if (Test-Path $ZipName) {
 
 # Configure CMake
 Write-Host "Configuring CMake..."
-cmake -B $BuildDir -DCMAKE_BUILD_TYPE=Release
+$CMakeArgs = @("-B", $BuildDir, "-DCMAKE_BUILD_TYPE=Release")
+if ($QtPath -ne "") {
+    $CMakeArgs += "-DCMAKE_PREFIX_PATH=$QtPath"
+    Write-Host "Using Qt Path: $QtPath"
+}
+
+cmake @CMakeArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "CMake configuration failed."
+    exit $LASTEXITCODE
+}
 
 # Build
 Write-Host "Building project..."
 cmake --build $BuildDir --config Release
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build failed."
+    exit $LASTEXITCODE
+}
 
 # Determine source directory (handle Multi-Config generators like Visual Studio)
 if (Test-Path "$BuildDir/Release/$ExecutableName") {

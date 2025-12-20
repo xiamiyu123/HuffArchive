@@ -66,14 +66,30 @@
 
 ### 本地打包
 
-#### Windows
-```powershell
-.\package_windows.ps1 -BuildType Release
-```
+打包脚本会自动切换到项目根目录，完成清理、配置、编译以及依赖项收集工作。
 
-#### Ubuntu
-```bash
-chmod +x package_ubuntu.sh
-./package_ubuntu.sh Release
+#### Windows (PowerShell)
+```powershell
+# 基础用法
+.\scripts\package_win.ps1
+
+# 如果 CMake 找不到 Qt，请手动指定 Qt 安装路径 (例如 Qt 6.x 的 msvc 或 mingw 目录)
+.\scripts\package_win.ps1 -QtPath "C:\Qt\6.x.x\msvc2022_64"
 ```
+打包完成后，项目根目录下会生成 `Huffman-Windows.zip`。
+
+#### Linux (Bash)
+```bash
+# 赋予执行权限
+chmod +x scripts/package_linux.sh
+# 基础用法
+./scripts/package_linux.sh
+# 手动指定 Qt 路径
+./scripts/package_linux.sh /path/to/qt/6.x.x/gcc_64
+```
+打包完成后，项目根目录下会生成 `Huffman-Linux.tar.gz`。
+
+## 常见问题
+- **Windows 下运行脚本提示权限错误**：请以管理员身份运行 PowerShell 并执行 `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`。
+- **找不到 Qt 环境**：请确保 Qt 的 `bin` 目录已添加到系统环境变量 PATH 中。
 
