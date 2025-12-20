@@ -37,6 +37,7 @@ private:
     QVBoxLayout* m_mainLayout;
     QWidget* m_topPanel;      // Replaces QToolBar for custom styling
     QLineEdit* m_pathEdit;    // Address bar
+    QLineEdit* m_searchEdit;  // Search bar
     QTreeWidget* m_fileList;
     QLabel* m_statusLabel;
     QProgressBar* m_progressBar;
@@ -59,6 +60,7 @@ private slots:
     void onAdd();
     void onDelete();
     void onInfo();
+    void onSearchTextChanged(const QString& text);
     void onItemDoubleClicked(QTreeWidgetItem* item, int column);
     void onOpenFileFinished();
 

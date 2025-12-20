@@ -177,8 +177,24 @@ void ArchiveView::setupToolBar() {
         "QLineEdit:focus { border: 1px solid #1A73E8; background: #FFFFFF; }"
     );
     
+    m_searchEdit = new QLineEdit(this);
+    m_searchEdit->setPlaceholderText("搜索文件...");
+    m_searchEdit->setFixedWidth(200);
+    m_searchEdit->setStyleSheet(
+        "QLineEdit { "
+        "   border: 1px solid #E0E0E0; "
+        "   border-radius: 6px; "
+        "   padding: 6px 10px; "
+        "   background: #FFFFFF; "
+        "   color: #3C4043; "
+        "   font-size: 13px;"
+        "}"
+        "QLineEdit:focus { border: 1px solid #1A73E8; }"
+    );
+    
     addressLayout->addWidget(pathLabel);
     addressLayout->addWidget(m_pathEdit);
+    addressLayout->addWidget(m_searchEdit);
     
     panelLayout->addLayout(btnLayout);
     panelLayout->addLayout(addressLayout);
@@ -235,6 +251,7 @@ void ArchiveView::setupConnections() {
     connect(m_addBtn, &QPushButton::clicked, this, &ArchiveView::onAdd);
     connect(m_deleteBtn, &QPushButton::clicked, this, &ArchiveView::onDelete);
     connect(m_infoBtn, &QPushButton::clicked, this, &ArchiveView::onInfo);
+    connect(m_searchEdit, &QLineEdit::textChanged, this, &ArchiveView::onSearchTextChanged);
     connect(m_fileList, &QTreeWidget::itemDoubleClicked, this, &ArchiveView::onItemDoubleClicked);
     connect(&m_openFileWatcher, &QFutureWatcher<std::pair<bool, std::string>>::finished, this, &ArchiveView::onOpenFileFinished);
 }
@@ -363,6 +380,9 @@ void ArchiveView::loadArchive() {
             .arg(fileCount)
             .arg(totalOriginalSize / (1024.0 * 1024.0), 0, 'f', 2)
     );
+
+    // 应用当前搜索过滤
+    onSearchTextChanged(m_searchEdit->text());
 }
 
 void ArchiveView::onExtract() {
@@ -455,6 +475,14 @@ void ArchiveView::onDelete() {
 void ArchiveView::onInfo() {
     ArchivePropertiesDialog dialog(m_archivePath, this, m_password);
     dialog.exec();
+}
+
+void ArchiveView::onSearchTextChanged(const QString& text) {
+    for (int i = 0; i < m_fileList->topLevelItemCount(); ++i) {
+        QTreeWidgetItem* item = m_fileList->topLevelItem(i);
+        bool match = item->text(0).contains(text, Qt::CaseInsensitive);
+        item->setHidden(!match);
+    }
 }
 
 void ArchiveView::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
