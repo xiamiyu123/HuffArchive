@@ -188,6 +188,9 @@ void MainWindow::showArchiveView(const QString& archivePath) {
     m_stackedWidget->addWidget(m_archiveView);
     m_stackedWidget->setCurrentWidget(m_archiveView);
     
+    // 连接返回信号
+    connect(m_archiveView, &ArchiveView::backRequested, this, &MainWindow::showWelcomeScreen);
+    
     // 更新窗口标题
     setWindowTitle(QString("哈夫曼压缩工具 - %1").arg(QFileInfo(archivePath).fileName()));
 }

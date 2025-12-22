@@ -566,7 +566,11 @@ void ArchiveView::onDelete() {
         QMessageBox::information(this, "提示", "操作已取消");
     } else {
         loadArchive();
-        QMessageBox::information(this, "完成", "文件删除成功");
+        if (m_fileList->topLevelItemCount() == 0) {
+            emit backRequested();
+        } else {
+            QMessageBox::information(this, "完成", "文件删除成功");
+        }
     }
 }
 

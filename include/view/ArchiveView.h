@@ -24,6 +24,9 @@ public:
 
     void loadArchive();
 
+signals:
+    void backRequested();
+
 private:
     void setupUI();
     void setupToolBar();
