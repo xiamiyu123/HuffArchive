@@ -25,11 +25,14 @@ public:
         m_checkCancelCallback = callback;
     }
 
+    void setPassword(const std::string& password) { m_password = password; }
+
 private:
     Model::DataModel* m_model;
     Structure::String m_archivePath;
     Structure::ArrayList<Structure::String> m_filesToDelete;
     Structure::String m_outputArchivePath;
+    std::string m_password;
     
     std::function<void(float, const std::string&)> m_progressCallback;
     std::function<bool()> m_checkCancelCallback;

@@ -21,12 +21,14 @@ public:
 
     void setProgressCallback(ProgressCallback cb) { m_progressCallback = cb; }
     void setCheckCancelCallback(CheckCancelCallback cb) { m_checkCancelCallback = cb; }
+    void setPassword(const std::string& password) { m_password = password; }
 
 private:
     Model::DataModel* m_model;
     Structure::String m_archivePath;
     Structure::ArrayList<Structure::String> m_newFiles;
     Structure::String m_outputArchivePath;
+    std::string m_password;
     ProgressCallback m_progressCallback;
     CheckCancelCallback m_checkCancelCallback;
 };

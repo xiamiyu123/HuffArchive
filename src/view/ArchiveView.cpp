@@ -291,32 +291,46 @@ void ArchiveView::loadArchive() {
         char fileHash[16];
         inFile.read(fileHash, 16);
 
-        bool ok;
-        QString password = QInputDialog::getText(this, "输入密码",
-                                             "该文件已加密，请输入密码：", QLineEdit::Password,
-                                             "", &ok);
-        if (!ok || password.isEmpty()) {
-            m_statusLabel->setText("已取消或密码为空");
-            inFile.close();
-            return;
+        QString password;
+        bool passwordValid = false;
+
+        // 如果已经有密码，先尝试使用现有密码
+        if (!m_password.empty()) {
+            password = QString::fromStdString(m_password);
+            unsigned char computedHash[16];
+            Util::CryptoUtils::hashPassword(password.toUtf8().constData(), reinterpret_cast<const unsigned char*>(salt), computedHash);
+            if (memcmp(fileHash, computedHash, 16) == 0) {
+                passwordValid = true;
+            }
         }
 
-        // 验证密码
-        unsigned char computedHash[16];
-        Util::CryptoUtils::hashPassword(password.toUtf8().constData(), reinterpret_cast<const unsigned char*>(salt), computedHash);
-        
-        if (memcmp(fileHash, computedHash, 16) != 0) {
-            QMessageBox::critical(this, "错误", "密码错误！");
-            m_statusLabel->setText("密码错误");
-            inFile.close();
-            return;
+        // 如果没有密码或现有密码无效，则提示输入
+        if (!passwordValid) {
+            bool ok;
+            password = QInputDialog::getText(this, "输入密码",
+                                                 "该文件已加密，请输入密码：", QLineEdit::Password,
+                                                 "", &ok);
+            if (!ok || password.isEmpty()) {
+                m_statusLabel->setText("已取消或密码为空");
+                inFile.close();
+                return;
+            }
+
+            // 验证新输入的密码
+            unsigned char computedHash[16];
+            Util::CryptoUtils::hashPassword(password.toUtf8().constData(), reinterpret_cast<const unsigned char*>(salt), computedHash);
+            
+            if (memcmp(fileHash, computedHash, 16) != 0) {
+                QMessageBox::critical(this, "错误", "密码错误！");
+                m_statusLabel->setText("密码错误");
+                inFile.close();
+                return;
+            }
+            m_password = password.toUtf8().constData();
         }
 
         // 初始化 Cipher
-        cipher = new Util::CryptoUtils::StreamCipher(password.toUtf8().constData(), reinterpret_cast<const unsigned char*>(salt));
-        
-        // 保存密码供后续解压使用
-        m_password = password.toUtf8().constData();
+        cipher = new Util::CryptoUtils::StreamCipher(m_password, reinterpret_cast<const unsigned char*>(salt));
     }
 
     auto readEncrypted = [&](char* buf, size_t size) {
@@ -466,6 +480,7 @@ void ArchiveView::onAdd() {
     // Use a local model for the operation
     Model::DataModel model;
     Command::AddFileCommand cmd(&model, m_archivePath, newFiles, m_archivePath);
+    cmd.setPassword(m_password);
     
     cmd.setProgressCallback([&progress](float p, const std::string& msg) {
         QMetaObject::invokeMethod(&progress, "setValue", Qt::QueuedConnection, Q_ARG(int, (int)(p * 100)));
@@ -522,6 +537,7 @@ void ArchiveView::onDelete() {
     // Use a local model for the operation
     Model::DataModel model;
     Command::DeleteFileCommand cmd(&model, m_archivePath, filesToDelete, m_archivePath);
+    cmd.setPassword(m_password);
     
     cmd.setProgressCallback([&progress](float p, const std::string& msg) {
         QMetaObject::invokeMethod(&progress, "setValue", Qt::QueuedConnection, Q_ARG(int, (int)(p * 100)));

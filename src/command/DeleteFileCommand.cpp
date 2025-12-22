@@ -36,7 +36,7 @@ void DeleteFileCommand::execute() {
     // 2. 解压现有归档
     if (m_progressCallback) m_progressCallback(0.0f, "正在解压现有归档...");
     
-    DecompressCommand decompressCmd(m_model, m_archivePath, tempDirStr);
+    DecompressCommand decompressCmd(m_model, m_archivePath, tempDirStr, m_password);
     decompressCmd.setProgressCallback([this](float p) {
         if (m_progressCallback) m_progressCallback(p * 0.4f, "正在解压...");
     });
@@ -87,6 +87,7 @@ void DeleteFileCommand::execute() {
     Structure::String tempOutPathStr(reinterpret_cast<const char*>(u8TempOutPath.c_str()));
 
     CompressCommand compressCmd(m_model, tempOutPathStr);
+    compressCmd.setPassword(Structure::String(m_password.c_str()));
     compressCmd.setProgressCallback([this](float p, const std::string& msg) {
         if (m_progressCallback) m_progressCallback(0.4f + p * 0.6f, msg);
     });
