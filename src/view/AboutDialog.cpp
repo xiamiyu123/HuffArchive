@@ -40,7 +40,7 @@ void AboutDialog::setupUI()
     m_mainLayout->addWidget(m_titleLabel);
     
     // 版本号
-    m_versionLabel = new QLabel(tr("版本 2.0.1"), this);
+    m_versionLabel = new QLabel(tr("版本 2.1.0"), this);
     QFont versionFont = m_versionLabel->font();
     versionFont.setPointSize(11);
     m_versionLabel->setFont(versionFont);
