@@ -36,22 +36,28 @@
 
 ## 发布
 
-本项目使用 GitHub Actions 自动构建和发布。
+本项目使用 GitHub Actions 自动完成跨平台构建、测试和发布。
 
-### 手动触发发布
+### CI 工作流
 
-1. 转到 [Actions](https://github.com/xiamiyu123/DataStructureA05/actions) 页面
-2. 选择 "Release Build and Publish" 工作流
-3. 点击 "Run workflow"
-4. 输入版本号（如 v1.0.0）
-5. 选择是否为预发布版本
-6. 点击 "Run workflow"
+`CI` 工作流会在 `push` 到 `main/master` 以及 `pull request` 时自动执行，并在以下平台上完成构建与测试：
+
+- Ubuntu
+- macOS
+- Windows
+
+### Release 工作流
+
+`Build and Release` 工作流支持两种触发方式：
+
+1. 推送版本标签，例如 `v1.0.0`
+2. 在 [Actions](https://github.com/xiamiyu123/DataStructureA05/actions) 页面手动触发，并填写版本号
 
 工作流将自动：
-- 在 Windows 和 Ubuntu 上构建项目
-- 运行测试
-- 打包应用程序
-- 创建 GitHub Release 并上传构建产物
+- 在 Windows 上构建并生成 `Huffman-Windows.zip`
+- 在 Linux 上构建并生成 `Huffman-Linux-x86_64.AppImage`
+- 在 macOS 上构建并生成 `Huffman-macOS.dmg`
+- 创建 GitHub Release 并上传以上产物
 
 ### 本地打包
 
@@ -67,7 +73,7 @@
 ```
 打包完成后，项目根目录下会生成 `Huffman-Windows.zip`。
 
-#### Linux (Bash)
+#### Linux AppImage (Bash)
 ```bash
 # 赋予执行权限
 chmod +x scripts/package_linux.sh
@@ -76,7 +82,23 @@ chmod +x scripts/package_linux.sh
 # 手动指定 Qt 路径
 ./scripts/package_linux.sh /path/to/qt/6.x.x/gcc_64
 ```
-打包完成后，项目根目录下会生成 `Huffman-Linux.tar.gz`。
+打包完成后，项目根目录下会生成 `Huffman-Linux-x86_64.AppImage`。
+
+你也可以直接调用新的脚本入口：
+```bash
+chmod +x scripts/package_linux_appimage.sh
+./scripts/package_linux_appimage.sh
+```
+
+#### macOS (Bash)
+```bash
+chmod +x scripts/package_macos.sh
+./scripts/package_macos.sh
+
+# 手动指定 Qt 路径
+./scripts/package_macos.sh /path/to/Qt/6.x.x/macos
+```
+打包完成后，项目根目录下会生成 `Huffman-macOS.dmg`。
 
 ## 常见问题
 - **Windows 下运行脚本提示权限错误**：请以管理员身份运行 PowerShell 并执行 `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`。

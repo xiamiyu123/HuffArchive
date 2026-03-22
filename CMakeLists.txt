@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(Huffman LANGUAGES CXX)
+project(Huffman VERSION 1.0.0 LANGUAGES CXX)
 
 # 指定 C++ 标准
 set(CMAKE_CXX_STANDARD 23)
@@ -110,9 +110,18 @@ target_compile_definitions(HuffmanCore PUBLIC
 # ==========================================
 # 主程序
 # ==========================================
-add_executable(${PROJECT_NAME} WIN32 src/main.cpp)
+add_executable(${PROJECT_NAME} WIN32 MACOSX_BUNDLE src/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE HuffmanCore)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    OUTPUT_NAME "Huffman"
+    MACOSX_BUNDLE_BUNDLE_NAME "Huffman"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.datastructure.huffman"
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+    MACOSX_BUNDLE_INFO_STRING "Huffman compression desktop application"
+)
 
 # Release 模式下的编译与链接优化
 if(MSVC)
@@ -123,6 +132,15 @@ else()
 endif()
 
 file(COPY ${CMAKE_SOURCE_DIR}/resource DESTINATION ${CMAKE_BINARY_DIR})
+
+install(TARGETS ${PROJECT_NAME}
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION .
+)
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/resource
+    DESTINATION .
+)
 
 # Windows 下自动运行 windeployqt 部署依赖的 DLL
 if(WIN32)
@@ -144,4 +162,3 @@ endif()
 # ==========================================
 enable_testing()
 add_subdirectory(tests)
-

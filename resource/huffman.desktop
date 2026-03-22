@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Huffman
+Comment=Huffman compression desktop application
+Exec=Huffman
+Icon=huffman
+Categories=Utility;
+Terminal=false

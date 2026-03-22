@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Huffman icon">
+  <rect width="256" height="256" rx="48" fill="#16324f"/>
+  <path d="M72 64h28v52h56V64h28v128h-28v-48h-56v48H72z" fill="#f7f3e9"/>
+  <path d="M56 204h144" stroke="#f59e0b" stroke-width="14" stroke-linecap="round"/>
+</svg>

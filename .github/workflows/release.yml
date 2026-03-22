@@ -1,6 +1,9 @@
 name: Build and Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -11,80 +14,128 @@ on:
 permissions:
   contents: write
 
-jobs:
-  build-windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6.8.0'
-        host: 'windows'
-        target: 'desktop'
-        arch: 'win64_msvc2022_64'
-        
-    - name: Package Windows
-      shell: pwsh
-      run: ./scripts/package_win.ps1
-      
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Huffman-Windows
-        path: Huffman-Windows.zip
+env:
+  RELEASE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
 
-  build-linux:
-    runs-on: ubuntu-24.04
+jobs:
+  build:
+    name: Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            qt_host: linux
+            qt_arch: linux_gcc_64
+            artifact_name: Huffman-Linux-AppImage
+            artifact_path: Huffman-Linux-x86_64.AppImage
+          - os: macos-latest
+            qt_host: mac
+            qt_arch: clang_64
+            artifact_name: Huffman-macOS-DMG
+            artifact_path: Huffman-macOS.dmg
+          - os: windows-latest
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+            artifact_name: Huffman-Windows-ZIP
+            artifact_path: Huffman-Windows.zip
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6.8.0'
-        host: 'linux'
-        target: 'desktop'
-        arch: 'linux_gcc_64'
-        
-    - name: Install Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 x11-utils
-        
-    - name: Package Linux
-      run: chmod +x scripts/package_linux.sh && ./scripts/package_linux.sh
-      
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Huffman-Linux
-        path: Huffman-Linux.tar.gz
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build \
+            libgl1-mesa-dev \
+            libxkbcommon-x11-0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-xinerama0 \
+            libxcb-xfixes0 \
+            libfuse2t64 \
+            desktop-file-utils
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+          host: ${{ matrix.qt_host }}
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
+          cache: true
+
+      - name: Build and test (Linux/macOS)
+        if: runner.os != 'Windows'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build --config Debug
+          ctest --test-dir build --output-on-failure
+
+      - name: Build and test (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build --config Debug
+          ctest --test-dir build --output-on-failure
+
+      - name: Package Linux AppImage
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x scripts/package_linux_appimage.sh
+          ./scripts/package_linux_appimage.sh
+
+      - name: Package macOS DMG
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x scripts/package_macos.sh
+          ./scripts/package_macos.sh
+
+      - name: Package Windows ZIP
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/package_win.ps1
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
 
   create-release:
-    needs: [build-windows, build-linux]
+    name: Publish Release
+    needs: build
     runs-on: ubuntu-latest
     steps:
-    - name: Download Windows Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: Huffman-Windows
-        
-    - name: Download Linux Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: Huffman-Linux
-        
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ inputs.version }}
-        name: Release ${{ inputs.version }}
-        draft: false
-        prerelease: false
-        files: |
-          Huffman-Windows.zip
-          Huffman-Linux.tar.gz
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: Release ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: false
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
