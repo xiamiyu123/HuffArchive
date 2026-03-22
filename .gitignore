@@ -16,6 +16,12 @@ cmake-build-debug
 build_release/
 build_tests/
 build_windows
+build_codex_check/
+AppDir/
+.tools/
+*.AppImage
+*.dmg
+.DS_Store
 # CLion
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

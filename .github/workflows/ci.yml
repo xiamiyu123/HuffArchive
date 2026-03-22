@@ -1,44 +1,68 @@
 name: CI
 
-on: push # when to trigger this. Here, on every push
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
 jobs:
-  build_and_test:
-    name: "Build and test"
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest] # windows-latest commented out
-    runs-on: ${{ matrix.os }} # use value from the matrix
+        include:
+          - os: ubuntu-latest
+            qt_host: linux
+            qt_arch: linux_gcc_64
+          - os: macos-latest
+            qt_host: mac
+            qt_arch: clang_64
+          - os: windows-latest
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+
     steps:
-    - uses: actions/checkout@v3
-    - name: Install dependencies (linux)
-      run: sudo apt install ninja-build
-      if: matrix.os == 'ubuntu-latest' # conditional, runs this step only on the Ubuntu runner
+      - uses: actions/checkout@v4
 
-    # - name: Install Ninja (windows)
-    #   if: matrix.os == 'windows-latest'
-    #   run: |
-    #     choco install ninja
+      - name: Install Ninja (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
 
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.5.2'
-        dir: ${{ github.workspace }}
-    - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja
 
-    # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
-    - name: Configure CMake (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: cmake -S . -B build -G "Ninja Multi-Config"
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
 
-    # - name: Configure CMake (Windows)
-    #   if: matrix.os == 'windows-latest'
-    #   run: cmake -S . -B build -G "Ninja Multi-Config"
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+          host: ${{ matrix.qt_host }}
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
+          cache: true
 
-    - name: Build
-      run: cmake --build build --config Debug
+      - name: Configure CMake
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 
-    - name: Test
-      env:
-        QT_QPA_PLATFORM: offscreen
-      run: ctest --test-dir build -C Debug --output-on-failure
+      - name: Build
+        run: cmake --build build --config Debug
+
+      - name: Test (Linux/macOS)
+        if: runner.os != 'Windows'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        run: ctest --test-dir build --output-on-failure

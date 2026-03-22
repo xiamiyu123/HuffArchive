@@ -39,6 +39,10 @@ private:
         return std::string(reinterpret_cast<const char*>(u8str.c_str()), u8str.length());
     }
 
+    std::string displayPath(const fs::path& path) {
+        return toUtf8(path);
+    }
+
 private slots:
     void initTestCase() {
         testDir = fs::temp_directory_path() / "huffman_multi_test";
@@ -305,16 +309,26 @@ private slots:
         
         // 打印解压后的实际文件
         std::cout << "=== Decompressed files (Chinese path) ===" << std::endl;
-        for (const auto& entry : fs::recursive_directory_iterator(decompressDir)) {
+        std::error_code ec;
+        for (const auto& entry : fs::recursive_directory_iterator(
+                 decompressDir, fs::directory_options::skip_permission_denied, ec)) {
             if (fs::is_regular_file(entry)) {
-                std::cout << "Found file: " << entry.path().string() << std::endl;
+                std::cout << "Found file: " << displayPath(entry.path()) << std::endl;
             }
         }
+        QVERIFY2(!ec, QString("Failed to iterate decompressed directory: %1")
+                          .arg(QString::fromUtf8(displayPath(decompressDir).c_str()))
+                          .toUtf8().constData());
         
         // 验证中文目录下的文件
         fs::path expectedPath = decompressDir / u8"目录一" / u8"文件一.txt";
-        QVERIFY2(fs::exists(expectedPath), 
-                 QString("Expected file not found: %1").arg(QString::fromStdString(expectedPath.string())).toUtf8());
+        QVERIFY2(fs::exists(expectedPath, ec),
+                 QString("Expected file not found: %1")
+                     .arg(QString::fromUtf8(displayPath(expectedPath).c_str()))
+                     .toUtf8().constData());
+        QVERIFY2(!ec, QString("Failed to check expected file path: %1")
+                          .arg(QString::fromUtf8(displayPath(expectedPath).c_str()))
+                          .toUtf8().constData());
         
         QCOMPARE(readFile(expectedPath), 
                  std::string("Chinese path test file 1"));
